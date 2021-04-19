@@ -4,7 +4,6 @@ import * as OAS from 'express-openapi-validator';
 import { FlowProject } from '../common/types/FlowProject';
 import { getFlowById, getFlows } from '../services/citizenApi';
 const fetch = require('isomorphic-fetch');
-require("dotenv").config();
 
 const router = express.Router();
 

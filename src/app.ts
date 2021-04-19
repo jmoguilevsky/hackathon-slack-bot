@@ -6,6 +6,8 @@ import errorHandling from './middlewares/errorHandling';
 import v1Router from './routers/v1';
 import testRouter from './routers/test';
 
+require("dotenv").config();
+
 // TODO:
 // - Tracing
 // - Tests
@@ -14,7 +16,7 @@ const app = express();
 
 app.use(helmet());
 
-app.use(bp.json({strict: true}), bp.text(), bp.urlencoded({ extended: false }));
+app.use(bp.json({ strict: true }), bp.text(), bp.urlencoded({ extended: false }));
 
 app.use(logging);
 

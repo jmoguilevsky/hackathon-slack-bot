@@ -17,7 +17,7 @@ export async function getFlows(): Promise<FlowSummaryList> {
 
 export async function getFlowById(flowId: string): Promise<FlowProject> {
     const orgId = await orgIdPromse;
-    const flowUrl = `https://citizen-platform-xapi-service.kqa.msap.io/api/v1/organizations/${orgId}/flows/${flowId}?readOnly=true`;
+    const flowUrl = `https://citizen-platform-xapi-service.kqa.msap.io/api/v1/organizations/${orgId}/flows/${flowId}`;
     return await makeApiCall<FlowProject>(flowUrl);
 }
 
@@ -48,6 +48,11 @@ async function makeApiCall<TResponse = any>(url: string): Promise<TResponse> {
 async function login(username?: string, password?: string): Promise<TokenResponse> {
     const url = `https://qax.anypoint.mulesoft.com/accounts/login`;
 
+    if (!username || !password) {
+        console.warn(`Missing username or password!`);
+        return Promise.reject("no username/password");
+    }
+    
     console.log('grabbing token...');
     const response = await fetch(url, {
         headers: {

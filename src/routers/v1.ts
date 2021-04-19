@@ -1,9 +1,10 @@
 import * as express from 'express';
 import * as service from '../services/service';
 import * as citizenApi from "../services/citizenApi";
-import { flowListToBlocks } from '../services/blocksTransformer';
+import { ActionIds, flowListToBlocks, flowToBlocks } from '../services/blocksTransformer';
 import { FlowSummaryList } from '../common/types/FlowProject';
-import {inspect} from 'util';
+import { inspect } from 'util';
+import { getFlowById } from '../services/citizenApi';
 
 const router = express.Router();
 
@@ -67,7 +68,14 @@ router.post('/interactive-action', async (req, res) => {
   console.log(inspect(payload, false, 10));
 
   const channel = payload.channel.id;
-  service.sendMessage(channel, JSON.stringify(payload), [])
+  if (payload.actions?.[0]?.action_id === ActionIds.FlowDetails) {
+    const flowId = payload.actions[0].value;
+    console.log(`fetching flow id ${flowId}`);
+    const flow = await getFlowById(flowId);
+    service.sendMessage(channel, JSON.stringify(payload), flowToBlocks(flow));
+  } else {
+    service.sendMessage(channel, JSON.stringify(payload), []);
+  }
   res.status(200).end();
 });
 

@@ -18,6 +18,9 @@ router.post('/', async (req, res) => {
     res.json({challenge: body?.challenge || 'hardcoded-value'});
     return;
   }
+
+  console.log('text', body.text);
+
   // const response = await service.process(req);
   // res.send(response);
 });

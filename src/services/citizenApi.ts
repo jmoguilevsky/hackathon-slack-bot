@@ -8,10 +8,12 @@ interface TokenResponse { access_token: string };
 const tokenPromise = login(process.env.USERNAME, process.env.PASSWORD);
 const orgIdPromse: Promise<string> = tokenPromise.then(t => getOrgId(t.access_token));
 
-export async function getFlows(): Promise<FlowSummaryList> {
+interface GetFlowsOptions { pageSize: number };
+export async function getFlows(options?: GetFlowsOptions): Promise<FlowSummaryList> {
+    const pageSize = options?.pageSize || 10;
     const orgId = await orgIdPromse;
     return await makeApiCall<FlowSummaryList>(
-        `https://citizen-platform-xapi-service.kqa.msap.io/api/v1/organizations/${orgId}/flows/?pageIndex=1&pageSize=25&orderBy=updateDate`
+        `https://citizen-platform-xapi-service.kqa.msap.io/api/v1/organizations/${orgId}/flows/?pageIndex=1&pageSize=${pageSize}&orderBy=updateDate`
     );
 }
 
@@ -52,7 +54,7 @@ async function login(username?: string, password?: string): Promise<TokenRespons
         console.warn(`Missing username or password!`);
         return Promise.reject("no username/password");
     }
-    
+
     console.log('grabbing token...');
     const response = await fetch(url, {
         headers: {

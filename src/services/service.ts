@@ -8,7 +8,7 @@ if (!token || !baseUri) {
   console.error('Missing environment variables TOKEN or SLACK_API');
 }
 
-const blocks = [
+const sampleBlocks = [
   {
     "type": "section",
     "text": {
@@ -120,11 +120,11 @@ const blocks = [
   }
 ];
 
-export async function sendMessage(channel: string, text: string) {
+export async function sendMessage(channel: string, text: string, blocks?: any) {
   return superagent.post(`${baseUri}/chat.postMessage`)
     .set('Authorization', `Bearer ${token}`)
     .set('Accept', 'application/json')
     .set('X-Slack-No-Retry', 1)
     .retry(0)
-    .send({text, channel, blocks});
+    .send({ text, channel, blocks: blocks || sampleBlocks });
 }

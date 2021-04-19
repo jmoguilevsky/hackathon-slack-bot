@@ -1,6 +1,8 @@
 import * as express from 'express';
 import * as service from '../services/service';
 import * as citizenApi from "../services/citizenApi";
+import { flowListToBlocks } from '../services/blocksTransformer';
+import { FlowSummaryList } from '../common/types/FlowProject';
 
 const router = express.Router();
 
@@ -29,8 +31,8 @@ router.post('/', async (req, res) => {
   const body = req.body;
   console.log(JSON.stringify(body));
 
-  if(body.type === "url_verification") {
-    res.json({challenge: body?.challenge || 'hardcoded-value'});
+  if (body.type === "url_verification") {
+    res.json({ challenge: body?.challenge || 'hardcoded-value' });
     return;
   }
 
@@ -48,17 +50,17 @@ router.post('/', async (req, res) => {
 
   const selectedAction = body.event.text;
 
-  let flows;
+  let flows: FlowSummaryList | undefined;
   try {
     flows = await citizenApi.getFlows();
   } catch (e) {
     console.error('Error fetching flows', e.stack);
   }
 
-  const {channel} = body.event;
+  const { channel } = body.event;
   try {
-    service.sendMessage(channel, 'This is a test');
-  } catch(error) {
+    service.sendMessage(channel, 'This is a test', flows && flowListToBlocks(flows));
+  } catch (error) {
     console.log('error', error.stack);
   }
 });

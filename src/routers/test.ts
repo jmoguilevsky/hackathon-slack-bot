@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as OAS from 'express-openapi-validator';
 import { FlowProject } from '../common/types/FlowProject';
 import { getFlowById, getFlows } from '../services/citizenApi';
+import { flowListToBlocks } from '../services/blocksTransformer';
 const fetch = require('isomorphic-fetch');
 
 const router = express.Router();
@@ -18,7 +19,7 @@ router.post('/', async (req, res) => {
 
 router.get("/flow/", async (req, res) => {
   try {
-    const result = await getFlows();
+    const result = flowListToBlocks(await getFlows());
     res.send(result);
   } catch (e) {
     res.send(e).status(500);

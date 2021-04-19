@@ -4,6 +4,7 @@ import * as bp from 'body-parser';
 import logging from './middlewares/logging';
 import errorHandling from './middlewares/errorHandling';
 import v1Router from './routers/v1';
+import testRouter from './routers/test';
 
 // TODO:
 // - Tracing
@@ -19,6 +20,7 @@ app.use(logging);
 
 // -- Routers
 app.use('/v1', v1Router);
+app.use('/test', testRouter);
 
 // -- Final configs
 app.use(errorHandling);

@@ -1,0 +1,36 @@
+enum FieldTypesEnum {
+  TEXT = 'TEXT',
+  TEXT_AREA = 'TEXT_AREA',
+  PASSWORD = 'PASSWORD',
+  SELECT = 'SELECT',
+  PICKLIST = 'PICKLIST',
+  CHECKBOX = 'CHECKBOX',
+  DATE = 'DATE',
+  DATE_TIME = 'DATE_TIME',
+  NUMBER = 'NUMBER',
+  INTEGER = 'INTEGER',
+  URL = 'URL',
+  PHONE = 'PHONE',
+  EMAIL = 'EMAIL',
+  SOQL_EDITOR = 'SOQL_EDITOR',
+  DROPDOWN_PANEL = 'DROPDOWN_PANEL',
+  RESULT_FILTER = 'RESULT_FILTER',
+  // Added to support https://www.mulesoft.org/jira/browse/CAPP-1705
+  UPSERT_MATCHING = 'UPSERT_MATCHING',
+  DYNAMIC_MAPPER = 'DYNAMIC_MAPPER',
+  OBJECT_FORM = 'OBJECT_FORM',
+  TYPE_SELECTOR = 'TYPE_SELECTOR',
+  // Slack
+  RICH_TEXT_EDITOR = 'RichTextEditor',
+  // Query Builder Types
+  QUERY_BUILDER = 'QUERY_BUILDER',
+  FIELD_FILTER = 'FIELD_FILTER',
+  CONDITION_BUILDER = 'CONDITION_BUILDER',
+  CUSTOM_CONDITION = 'CUSTOM_CONDITION',
+  // List mapping
+  ARRAY_FIELD = 'arrayField',
+  // XML object mapping
+  XML_FIELD = 'xmlField',
+}
+
+export default FieldTypesEnum;

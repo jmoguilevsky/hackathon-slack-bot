@@ -1,24 +1,31 @@
-const express = require("express");
-const https = require(`https`);
-const fetch = require("node-fetch");
+import * as express from 'express';
+import * as path from 'path';
+import * as OAS from 'express-openapi-validator';
+const fetch = require('isomorphic-fetch');
 require("dotenv").config();
 
-const app = express();
-const port = 3000;
 const token = process.env.TOKEN;
 const orgId = process.env.ORG_ID || "bf33dc0b-10a6-4f6b-9714-dd172737daeb";
 
-app.get("/", (req, res) => {
-  res.send("Hello World!");
+const router = express.Router();
+
+
+router.get('/', (req, res) => res.send('TEST: Hello world!\n'));
+
+router.post('/', async (req, res) => {
+  console.log(req.body);
+  res.json({ ok: 'OK' });
+  // const response = await service.process(req);
+  // res.send(response);
 });
 
-app.get("/api/flow/", async (req, res) => {
+router.get("/flow/", async (req, res) => {
   const result = await makeApiCall(
     `https://citizen-platform-xapi-service.kqa.msap.io/api/v1/organizations/${orgId}/flows/?pageIndex=1&pageSize=25&orderBy=updateDate`
   );
   res.send(result);
 });
-app.get("/api/flow/:flowId", async (req, res) => {
+router.get("/flow/:flowId", async (req, res) => {
   const flowId = req.params.flowId;
   const flowUrl = `https://citizen-platform-xapi-service.kqa.msap.io/api/v1/organizations/${orgId}/flows/${flowId}?readOnly=true`;
   try {
@@ -39,16 +46,14 @@ app.get("/api/flow/:flowId", async (req, res) => {
 
     res.send(result);
   } catch (e) {
-    res.send(result).status(500);
+    res.send(e).status(500);
   }
 });
 
-app.listen(port, () => {
-  console.log(`Example app listening at http://localhost:${port}`);
-});
+export default router;
 
-async function makeApiCall(url) {
-  console.log(`querying ${url}`);
+async function makeApiCall(url: string) {
+  console.log(`querying ${url}`, token);
   const result = await fetch(url, {
     headers: {
       accept: "application/json",

@@ -1,7 +1,28 @@
 import { FlowProject, FlowSummaryList } from "../common/types/FlowProject";
 
 export enum ActionIds {
-    FlowDetails = 'flow-details'
+    FlowDetails = 'flow-details',
+    Activate = 'activate',
+    SeeRunHistory = 'see-run-history',
+}
+
+const ActionIdToLabel: Readonly<Record<ActionIds, string>> = {
+    [ActionIds.Activate]: "Activate",
+    [ActionIds.FlowDetails]: "Select",
+    [ActionIds.SeeRunHistory]: "See run history"
+}
+
+function actionFactory(action: ActionIds) {
+    return {
+        "type": "button",
+        "text": {
+            "type": "plain_text",
+            "text": ActionIdToLabel[action],
+            "emoji": true
+        },
+        "value": "click_me_123",
+        "action_id": action
+    };
 }
 
 export function flowListToBlocks(flows: Readonly<FlowSummaryList>) {
@@ -69,6 +90,16 @@ export function flowToBlocks(flow: FlowProject) {
             "type": "image",
             "image_url": "https://miro.medium.com/max/3840/1*h-ToKg2-sQf4H5aIGF3tlw.png",
             "alt_text": "inspiration"
+        },
+        {
+            "type": "divider"
+        },
+        {
+            "type": "actions",
+            "elements": [
+                actionFactory(ActionIds.Activate),
+                actionFactory(ActionIds.SeeRunHistory)
+            ]
         }
     ];
 }

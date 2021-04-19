@@ -3,6 +3,7 @@ import * as service from '../services/service';
 import * as citizenApi from "../services/citizenApi";
 import { flowListToBlocks } from '../services/blocksTransformer';
 import { FlowSummaryList } from '../common/types/FlowProject';
+import {inspect} from 'util';
 
 const router = express.Router();
 
@@ -20,10 +21,6 @@ const events = {
   getLastExecutionErrors: 'Get Last Execution Errors',
   subscribeToFlowEvents: 'Subscribe To Flow Events',
 }
-
-// const apiSpec = path.join(__dirname, '../../apiSpec.yaml'); // TODO file location
-// router.use('/spec', express.static(apiSpec));
-// router.use(OAS.middleware({ apiSpec }));
 
 router.get('/', (req, res) => res.send('Hello world!\n'));
 
@@ -48,7 +45,7 @@ router.post('/', async (req, res) => {
     return;
   }
 
-  const selectedAction = body.event.text;
+  const selectedAction = (body.event.text as string).toLowerCase().trim().replace(/ +/g, ' ');
 
   let flows: FlowSummaryList | undefined;
   try {
@@ -66,8 +63,24 @@ router.post('/', async (req, res) => {
 });
 
 router.post('/interactive-action', async (req, res) => {
-  console.log(JSON.stringify(req.body, null, 4));
+  const payload = JSON.parse(req.body.payload);
+  console.log(inspect(payload, false, 10));
+
+  const channel = payload.channel.id;
+  service.sendMessage(channel, JSON.stringify(payload), [])
   res.status(200).end();
 });
 
 export default router;
+
+
+const commands = {
+  'list flows': {
+    data: citizenApi.getFlows,
+    format: flowListToBlocks
+  },
+  'describe flows': {
+    data: citizenApi.getFlowById,
+    format: (x) => x
+  }
+}

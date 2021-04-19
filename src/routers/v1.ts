@@ -25,7 +25,7 @@ const events = {
 
 router.get('/', (req, res) => res.send('Hello world!\n'));
 
-router.post('/', async (req, res) => {
+router.post('/', async (req, res, next) => {
   const body = req.body;
   console.log(JSON.stringify(body));
 
@@ -41,8 +41,9 @@ router.post('/', async (req, res) => {
     return;
   }
 
-  if (!(body.event.text as string).includes('<@U01V54MAS49>')) {
-    console.log('Skipping as message is not directed at us');
+  const {text, type} = body.event
+  if (!text.includes('<@U01V54MAS49>') || type !== 'message') {
+    console.log('Skipping as message is not directed at us or it was not a message');
     return;
   }
 
@@ -53,6 +54,7 @@ router.post('/', async (req, res) => {
     flows = await citizenApi.getFlows();
   } catch (e) {
     console.error('Error fetching flows', e.stack);
+    next(e);
   }
 
   const { channel } = body.event;
@@ -63,20 +65,25 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.post('/interactive-action', async (req, res) => {
-  const payload = JSON.parse(req.body.payload);
-  console.log(inspect(payload, false, 10));
+router.post('/interactive-action', async (req, res, next) => {
+  try {
+    res.status(200).end();
 
-  const channel = payload.channel.id;
-  if (payload.actions?.[0]?.action_id === ActionIds.FlowDetails) {
-    const flowId = payload.actions[0].value;
-    console.log(`fetching flow id ${flowId}`);
-    const flow = await getFlowById(flowId);
-    service.sendMessage(channel, JSON.stringify(payload), flowToBlocks(flow));
-  } else {
-    service.sendMessage(channel, JSON.stringify(payload), []);
+    const payload = JSON.parse(req.body.payload);
+    // console.log(inspect(payload, false, 10));
+
+    const channel = payload.channel.id;
+    if (payload.actions?.[0]?.action_id === ActionIds.FlowDetails) {
+      const flowId = payload.actions[0].value;
+      console.log(`fetching flow id ${flowId}`);
+      const flow = await getFlowById(flowId);
+      service.sendMessage(channel, 'This is an action', flowToBlocks(flow));
+    } else {
+      service.sendMessage(channel, 'This is an action', []);
+    }
+  } catch (e) {
+    next(e);
   }
-  res.status(200).end();
 });
 
 export default router;

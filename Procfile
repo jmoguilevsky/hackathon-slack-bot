@@ -1,1 +1,1 @@
-slackbot: npm run start:prod
+slackbot: npm run start

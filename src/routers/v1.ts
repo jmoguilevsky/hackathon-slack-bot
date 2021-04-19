@@ -19,7 +19,7 @@ router.post('/', async (req, res) => {
     return;
   }
 
-  console.log('text', body.text);
+  console.log('body text', body.text);
 
   // const response = await service.process(req);
   // res.send(response);

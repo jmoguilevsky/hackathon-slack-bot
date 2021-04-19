@@ -18,3 +18,5 @@ paths:
     post:
       responses:
         200:
+          content:
+            application/json:

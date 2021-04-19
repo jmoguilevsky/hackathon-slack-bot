@@ -11,8 +11,13 @@ const router = express.Router();
 router.get('/', (req, res) => res.send('Hello world!\n'));
 
 router.post('/', async (req, res) => {
-  console.log(req.body);
-  res.json({ok: 'OK'});
+  const body = req.body;
+  console.log(JSON.stringify(body, null, 4));
+
+  if(body.type === "url_verification") {
+    res.json({challenge: body?.challenge || 'hardcoded-value'});
+    return;
+  }
   // const response = await service.process(req);
   // res.send(response);
 });

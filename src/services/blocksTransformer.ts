@@ -40,7 +40,7 @@ export function flowListToBlocks(flows: Readonly<FlowSummaryList>) {
             "type": "section",
             "text": {
                 "type": "mrkdwn",
-                "text": `*${flow.name}*\n_${flow.lastUpdatedDate}_`
+                "text": `*${flow.name}*\n*_${flow.status}_* _${flow.lastUpdatedDate}_`
             },
             "accessory": {
                 "type": "button",
@@ -136,7 +136,7 @@ function getStepsDescription(steps: Array<Step>, connectionsById: ConnectionById
         }
         if (step.name) {
             const connection = step.connectionId ? connectionsById[step.connectionId] : null;
-            if (!connection) { console.warn(`unable to find connection id ${step.connectionId}`, connectionsById); }
+            if (!connection) { console.warn(`unable to find connection id ${step.connectionId}`); }
             const stepDes = `${getDescriptionForStepName(step)} in ${step.connector} :${step.connector}: (${connection?.name})\n`;
             return [...descriptions, `${"\t".repeat(nestedTimes)}${stepDes}`];
         }

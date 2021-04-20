@@ -2,7 +2,7 @@ import * as express from 'express';
 import * as path from 'path';
 import * as OAS from 'express-openapi-validator';
 import { FlowProject } from '../common/types/FlowProject';
-import { getConnections, getFlowById, getFlows } from '../services/citizenApi';
+import { getConnections, getFlowById, getFlows, getRunHistory } from '../services/citizenApi';
 import { flowListToBlocks, flowToBlocks } from '../services/blocksTransformer';
 const fetch = require('isomorphic-fetch');
 
@@ -26,8 +26,9 @@ router.get("/flow/", async (req, res) => {
   }
 });
 router.get("/flow/:flowId", async (req, res) => {
+  const flowId = req.params.flowId;
   try {
-    const result = await getFlowById(req.params.flowId);
+    const result = await getFlowById(flowId);
     // TODO: transform into text version of the flow (that can be sent back to Slack)
     //      - replacing things like the connection Id with the name
 
@@ -42,7 +43,10 @@ router.get("/flow/:flowId", async (req, res) => {
             2a Create Contact in Salesforce
     */
 
+    const runHistoryPromise = getRunHistory(flowId);
     const connections = await getConnections();
+    const runHistory = await runHistoryPromise;
+    console.log(`runHistory`, runHistory);
 
     const blocks = flowToBlocks(result, connections);
     res.send(blocks);

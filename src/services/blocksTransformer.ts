@@ -46,23 +46,29 @@ export function flowListToBlocks(flows: Readonly<FlowSummaryList>): unknown {
         text: "Which flow would you like to see details for?",
       },
     },
-    ...flows.results.map((flow) => ({
-      type: "section",
-      text: {
-        type: "mrkdwn",
-        text: `*${flow.name}*\n*_${flow.status}${buildStatus(flow)}_* _Last updated: ${flow.lastUpdatedDate}_`,
+    ...flows.results.reduce<Array<any>>((blocks, flow) => [
+      ...blocks,
+      {
+          "type": "section",
+          "text": {
+              "type": "mrkdwn",
+              "text": `*${flow.name}*\n${flow.lastUpdatedDate} \t\t*${buildStatus(flow)}*\t:${flow.status}:`
+          },
+          "accessory": {
+              "type": "button",
+              "text": {
+                  "type": "plain_text",
+                  "text": "Select",
+                  "emoji": true
+              },
+              "value": flow.id,
+              "action_id": ActionIds.FlowDetails
+          }
       },
-      accessory: {
-        type: "button",
-        text: {
-          type: "plain_text",
-          text: "Select",
-          emoji: true,
-        },
-        value: flow.id,
-        action_id: ActionIds.FlowDetails,
-      },
-    })),
+      {
+          "type": "divider"
+      }
+  ], [])
   ];
 }
 

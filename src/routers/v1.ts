@@ -78,7 +78,7 @@ router.post("/", async (req, res, next) => {
 
 // ---
 
-type Command = (value: string, channel: string) => Promise<{ text: string; blocks: unknown }>; // it outputs a blocks array
+type Command = (value: string, channel: string, triggerId: string) => Promise<{ text: string; blocks: unknown } | void>; // it outputs a blocks array
 
 const defaultCommand: Command = async () => ({ text: "Default response", blocks: undefined });
 
@@ -109,9 +109,59 @@ const commands: Record<ActionIds, Command> = {
       blocks: undefined,
     };
   },
+  [ActionIds.Deactivate]: defaultCommand,
   // [ActionIds.Deactivate]: async (flowId: string) => {
   // },
   [ActionIds.SeeRunHistory]: defaultCommand,
+  [ActionIds.ScheduleActivation]: async (flowId, name2, triggerId) => {
+    const modal = {
+      "title": {
+        "type": "plain_text",
+        "text": "Schedule Activation"
+      },
+      "submit": {
+        "type": "plain_text",
+        "text": "Submit"
+      },
+      "private_metadata": flowId,
+      "blocks": [
+        {
+          "type": "section",
+          "text": {
+            "type": "mrkdwn",
+            "text": "Pick a date for the activation."
+          },
+          "accessory": {
+            "type": "datepicker",
+            "initial_date": "2021-04-21",
+            "placeholder": {
+              "type": "plain_text",
+              "text": "Select a date",
+              "emoji": true
+            }
+          }
+        },
+        {
+          "type": "section",
+          "text": {
+            "type": "mrkdwn",
+            "text": "Pick a time for activation"
+          },
+          "accessory": {
+            "type": "timepicker",
+            "initial_time": "13:00",
+            "placeholder": {
+              "type": "plain_text",
+              "text": "Select time",
+              "emoji": true
+            }
+          }
+        }
+      ],
+      "type": "modal"
+    };
+    await service.openModal(modal, triggerId);
+  }
 };
 
 router.post("/interactive-action", async (req, res, next) => {
@@ -121,7 +171,18 @@ router.post("/interactive-action", async (req, res, next) => {
     const payload = JSON.parse(req.body.payload);
     // console.log(inspect(payload, false, 10));
 
-    const channel = payload.channel.id;
+    if (payload.type === 'view_submission') {
+      const values = payload.view?.state?.values;
+      const flowId = payload.view?.private_metadata;
+      console.log(values);
+      console.log(flowId)
+      // TODO: Execute reminder
+      return;
+    }
+
+    const channel = payload.channel?.id;
+
+    const triggerId = payload.trigger_id;
 
     const action: { action_id: ActionIds; value: string } = payload.actions?.[0] || {
       action_id: "default",
@@ -130,9 +191,12 @@ router.post("/interactive-action", async (req, res, next) => {
 
     const command = commands[action.action_id] || defaultCommand;
 
-    const { text, blocks } = await command(action.value, channel);
+    const message = await command(action.value, channel, triggerId);
 
-    await service.sendMessage(channel, text, blocks);
+    if (message && (message.text || message.blocks)) {
+      const { text, blocks } = message;
+      await service.sendMessage(channel, text, blocks);
+    }
   } catch (e) {
     next(e);
   }

@@ -26,6 +26,28 @@ export async function sendMessage(channel: string, text: string, blocks?: unknow
     });
 }
 
+export async function openModal(view: unknown, triggerId: string) {
+  const token = process.env.TOKEN;
+  const baseUri = process.env.SLACK_API;
+
+  if (!token || !baseUri) {
+    throw new Error("Missing environment variables TOKEN or SLACK_API");
+  }
+
+  return superagent
+    .post(`${baseUri}/views.open`)
+    .set({
+      Authorization: `Bearer ${token}`,
+      "X-Slack-No-Retry": 1,
+    })
+    .retry(0)
+    .send({ trigger_id: triggerId, view })
+    .then((response: unknown) => {
+      console.log("Slack MEELI responded with:", response);
+      return response;
+    });
+}
+
 /*
 const sampleBlocks = [
   {

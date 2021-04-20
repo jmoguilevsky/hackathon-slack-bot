@@ -17,6 +17,7 @@ export enum ActionIds {
   Activate = "activate",
   Deactivate = "deactivate",
   SeeRunHistory = "see-run-history",
+  ScheduleActivation = "schedule-activation"
 }
 
 const ActionIdToLabel: Readonly<Record<ActionIds, string>> = {
@@ -24,6 +25,7 @@ const ActionIdToLabel: Readonly<Record<ActionIds, string>> = {
   [ActionIds.FlowDetails]: "Select",
   [ActionIds.Deactivate]: "Deactivate",
   [ActionIds.SeeRunHistory]: "See run history",
+  [ActionIds.ScheduleActivation]: "Schedule activation"
 };
 
 function actionFactory(action: ActionIds, value = "click_me_123") {
@@ -97,6 +99,7 @@ export async function flowToBlocks(
       elements: [
         actionFactory(ActionIds.Activate, flow.id),
         actionFactory(ActionIds.SeeRunHistory, flow.id),
+        actionFactory(ActionIds.ScheduleActivation, flow.id),
         {
           type: "button",
           text: {

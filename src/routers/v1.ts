@@ -13,7 +13,7 @@ type Command = (
   triggerId?: string,
 ) => Promise<{ text: string; blocks: unknown } | void>; // it outputs a blocks array
 
-const defaultCommand: Command = async () => ({ text: "Default response", blocks: undefined });
+const defaultCommand: Command = async () => undefined;
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const commands: Record<ActionIds, Command> = {
@@ -53,7 +53,7 @@ const commands: Record<ActionIds, Command> = {
   [ActionIds.Deactivate]: async (flowId: string, channel: string) => {
     await citizenApi.stopFlowById(flowId);
     const flow = await citizenApi.getFlowById(flowId);
-    await service.sendMessage(channel, `Stopping "${flow.name}" :loading:`);
+    await service.sendMessage(channel, `Stopping "${flow.name}" :hourglass_flowing_sand:`);
     await pollForFlowStatus(flowId, FlowStatus.INACTIVE);
     return {
       text: `Flow "${flow.name}" has stopped :black_square_for_stop:`,
@@ -197,7 +197,8 @@ router.post("/interactive-action", async (req, res, next) => {
     setTimeout(() => res.status(200).end(), 1500);
 
     const payload = JSON.parse(req.body.payload);
-    console.log(JSON.stringify(payload));
+    console.log(JSON.stringify(req.body));
+    const channel = payload.channel?.id;
 
     if (payload.type === "view_submission") {
       const values = payload.view?.state?.values;
@@ -208,10 +209,21 @@ router.post("/interactive-action", async (req, res, next) => {
       console.log(metadataValues)
       console.log(flowId, channelId)
       // TODO: Execute reminder
-      return;
-    }
 
-    const channel = payload.channel?.id;
+      const stringified = JSON.stringify(payload.view.state.values as string);
+      const date = stringified.match(/"type":"datepicker","selected_date":"([^"]*)"/)[1].split("-");
+      const time = stringified.match(/"type":"timepicker","selected_time":"([^"]*)"/)[1].split(":");
+      const timestamp = Date.parse(`${date} ${time}:00 GMT+0700`);
+      await service.sendMessage(
+        channel,
+        `<@${process.env.BOT_ID}> activate flow \`${flowId}\``,
+        undefined,
+        timestamp / 1000,
+      );
+      return {
+        text: `Flow \`flowId\` will be activated at ${date} ${time} (PDT)`,
+      };
+    }
 
     const triggerId = payload.trigger_id;
 

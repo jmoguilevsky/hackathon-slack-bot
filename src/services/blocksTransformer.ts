@@ -18,7 +18,7 @@ export enum ActionIds {
   Activate = "activate",
   Deactivate = "deactivate",
   SeeRunHistory = "see-run-history",
-  ScheduleActivation = "schedule-activation"
+  ScheduleActivation = "schedule-activation",
 }
 
 const ActionIdToLabel: Readonly<Record<ActionIds, string>> = {
@@ -26,7 +26,7 @@ const ActionIdToLabel: Readonly<Record<ActionIds, string>> = {
   [ActionIds.FlowDetails]: "Select",
   [ActionIds.Deactivate]: "Deactivate :black_square_for_stop:",
   [ActionIds.SeeRunHistory]: "See run history",
-  [ActionIds.ScheduleActivation]: "Schedule activation"
+  [ActionIds.ScheduleActivation]: "Schedule activation",
 };
 
 function actionFactory(action: ActionIds, value = "click_me_123") {
@@ -253,7 +253,7 @@ function getConditionalDescription(step: ConditionalStep, connectionsById: Conne
 }
 
 function getStepsDescription(steps: Array<Step>, connectionsById: ConnectionById, nestedTimes = 0) {
-  return steps.reduce<Array<string>>((descriptions, step) => {
+  return steps.filter(Boolean).reduce<Array<string>>((descriptions, step) => {
     if (step.type === "CONDITIONAL") {
       const conditionalDes = getConditionalDescription(step as ConditionalStep, connectionsById, nestedTimes);
       return [...descriptions, `${"\t".repeat(nestedTimes)}${conditionalDes}`];

@@ -7,7 +7,7 @@
     "build": "tsc",
     "start": "node .",
     "start:prod": "yarn run build && yarn run start",
-    "dev": "concurrently 'tsc --watch --preserveWatchOutput' 'nodemon .'",
+    "dev": "concurrently 'tsc --watch --preserveWatchOutput' 'nodemon --inspect .'",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

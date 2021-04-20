@@ -14,7 +14,7 @@ import { RunHistoryRecord } from "../common/types/RunHistory";
 import { createFlowImage } from "../utils/imageCreator";
 
 export enum ActionIds {
-  FlowDetails = "flow-details",
+  FlowDetails = "describe",
   Activate = "activate",
   Deactivate = "deactivate",
   SeeRunHistory = "see-run-history",
@@ -22,9 +22,9 @@ export enum ActionIds {
 }
 
 const ActionIdToLabel: Readonly<Record<ActionIds, string>> = {
-  [ActionIds.Activate]: "Activate",
+  [ActionIds.Activate]: "Activate :arrow_forward:",
   [ActionIds.FlowDetails]: "Select",
-  [ActionIds.Deactivate]: "Deactivate",
+  [ActionIds.Deactivate]: "Deactivate :black_square_for_stop:",
   [ActionIds.SeeRunHistory]: "See run history",
   [ActionIds.ScheduleActivation]: "Schedule activation"
 };
@@ -42,25 +42,52 @@ function actionFactory(action: ActionIds, value = "click_me_123") {
   };
 }
 
-export function runHistoryToBlocks(runHistory: Array<RunHistoryRecord>): unknown {
-  return runHistory.map((entry) => {
-    const start = new Date(entry.start_date_time);
-    const finish = new Date(entry.end_date_time);
-    const duration = finish.getTime() - start.getTime();
-    return {
-      type: "context",
+export function runHistoryToBlocks(
+  flow: FlowProject,
+  runHistory: Array<RunHistoryRecord>,
+  flowLaunchUrl: string,
+): unknown {
+  return [
+    {
+      type: "header",
+      text: {
+        type: "plain_text",
+        text: `Run history for: ${flow.name}`,
+        emoji: true,
+      },
+    },
+    ...runHistory.map((entry) => {
+      const start = new Date(entry.start_date_time);
+      const finish = new Date(entry.end_date_time);
+      const duration = finish.getTime() - start.getTime();
+      return {
+        type: "context",
+        elements: [
+          {
+            type: "mrkdwn",
+            text: `${start.toLocaleString()}\t${entry.status === "SUCCESS" ? ":white_check_mark:" : ":red_circle:"}\t*${
+              entry.status
+            }*\t${duration}ms`,
+          },
+        ],
+      };
+    }),
+    {
+      type: "actions",
       elements: [
+        actionFactory(ActionIds.FlowDetails, flow.id),
         {
-          type: "mrkdwn",
-          text: `${entry.start_date_time} (${duration})`,
-        },
-        {
-          type: "mrkdwn",
-          text: `${entry.status}`,
+          type: "button",
+          text: {
+            type: "plain_text",
+            text: "View in Browser",
+            emoji: true,
+          },
+          url: flowLaunchUrl,
         },
       ],
-    };
-  });
+    },
+  ];
 }
 
 export function flowListToBlocks(flows: Readonly<FlowSummaryList>): unknown {
@@ -115,6 +142,7 @@ export async function flowToBlocks(
   flow: FlowProject,
   connections: ConnectionListResponse,
   flowLaunchUrl: string,
+  status: FlowStatus,
 ): Promise<any> {
   const flowBlocks = await getFlowBlocks(flow, connections);
   return [
@@ -122,7 +150,7 @@ export async function flowToBlocks(
     {
       type: "actions",
       elements: [
-        actionFactory(ActionIds.Activate, flow.id),
+        actionFactory(status === FlowStatus.ACTIVE ? ActionIds.Deactivate : ActionIds.Activate, flow.id),
         actionFactory(ActionIds.SeeRunHistory, flow.id),
         actionFactory(ActionIds.ScheduleActivation, flow.id),
         {

@@ -87,7 +87,7 @@ export async function getLaunchUrlForFlow(flowId: string): Promise<string> {
   const url = `https://qax.composer.mulesoft.com/silentLogin#access_token=${
     token.access_token
   }&token_type=bearer&state=${btoa(JSON.stringify({ flowId }))}`;
-  console.log(url);
+  // console.log(url);
   return url;
 }
 
@@ -116,9 +116,9 @@ export async function getFlowStatus(flowId: string): Promise<FlowStatusResponse>
   return await makeApiCall<FlowStatusResponse>(url);
 }
 
-export async function getFlowById(flowId: string): Promise<FlowProject> {
+export async function getFlowById(flowId: string): Promise<Readonly<FlowProject>> {
   const orgId = await getOrgId();
-  const flowUrl = `https://citizen-platform-xapi-service.kqa.msap.io/api/v1/organizations/${orgId}/flows/${flowId}`;
+  const flowUrl = `https://citizen-platform-xapi-service.kqa.msap.io/api/v1/organizations/${orgId}/flows/${flowId}?readOnly=true`;
   return await cache.retrieve(flowUrl, () => makeApiCall<FlowProject>(flowUrl));
 }
 

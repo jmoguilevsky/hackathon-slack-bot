@@ -3,7 +3,12 @@ import * as superagent from "superagent";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 require("dotenv").config();
 
-export async function sendMessage(channel: string, text: string, blocks?: unknown): Promise<superagent.Response> {
+export async function sendMessage(
+  channel: string,
+  text: string,
+  blocks?: unknown,
+  post_at?: number,
+): Promise<superagent.Response> {
   const token = process.env.TOKEN;
   const baseUri = process.env.SLACK_API;
 
@@ -13,20 +18,20 @@ export async function sendMessage(channel: string, text: string, blocks?: unknow
 
   console.log("Posting message to slack", channel, text);
   return superagent
-    .post(`${baseUri}/chat.postMessage`)
+    .post(`${baseUri}/chat.${post_at ? "scheduleMessage" : "postMessage"}`)
     .set({
       Authorization: `Bearer ${token}`,
       "X-Slack-No-Retry": 1,
     })
     .retry(0)
-    .send({ text, channel, blocks })
+    .send({ text, channel, blocks, post_at })
     .then((response) => {
       console.log("Slack responded with", response.status, response.body, channel, text, inspect(blocks, false, 10));
       return response;
     });
 }
 
-export async function openModal(view: unknown, triggerId: string) {
+export async function openModal(view: unknown, triggerId: string): Promise<superagent.Response> {
   const token = process.env.TOKEN;
   const baseUri = process.env.SLACK_API;
 
@@ -42,7 +47,7 @@ export async function openModal(view: unknown, triggerId: string) {
     })
     .retry(0)
     .send({ trigger_id: triggerId, view })
-    .then((response: unknown) => {
+    .then((response) => {
       console.log("Slack MEELI responded with:", response);
       return response;
     });

@@ -77,21 +77,21 @@ router.post("/", async (req, res, next) => {
 
 // ---
 
-interface Command {
-  dataFn: (value: string) => Promise<any>;
-  formatFn: (data: any) => unknown; // it outputs a blocks array
-}
+type Command = (value: string) => unknown; // it outputs a blocks array
 
-const defaultCommand: Command = {
-  dataFn: async () => undefined,
-  formatFn: () => undefined,
-};
+const defaultCommand: Command = async () => undefined;
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const commands: Record<ActionIds, Command> = {
-  [ActionIds.FlowDetails]: {
-    dataFn: citizenApi.getFlowById,
-    formatFn: flowToBlocks,
+  [ActionIds.FlowDetails]: async (flowId) => {
+    console.log(`fetching flow id ${flowId}`);
+    const flow = await citizenApi.getFlowById(flowId);
+    console.log("fetching connections");
+    const connections = await citizenApi.getConnections();
+    console.log("Got connections. Mapping to blocks...");
+    const history = await citizenApi.getRunHistory(flowId, 1, 1);
+    console.log(`Got history. ${JSON.stringify(history, null, 4)}`);
+    return flowToBlocks(flow, connections);
   },
   [ActionIds.Activate]: defaultCommand,
   [ActionIds.SeeRunHistory]: defaultCommand,
@@ -105,23 +105,15 @@ router.post("/interactive-action", async (req, res, next) => {
     // console.log(inspect(payload, false, 10));
 
     const channel = payload.channel.id;
-    if (payload.actions?.[0]?.action_id === ActionIds.FlowDetails) {
-      const flowId = payload.actions[0].value;
-      console.log(`fetching flow id ${flowId}`);
-      const flow = await getFlowById(flowId);
-      const connections = await citizenApi.getConnections();
-      service.sendMessage(channel, 'This is an action', flowToBlocks(flow,connections));
-      return;
-    }
 
     const action: { action_id: ActionIds; value: string } = payload.actions?.[0] || {
       action_id: "default",
       value: null,
     };
 
-    const { dataFn, formatFn } = commands[action.action_id] || defaultCommand;
+    const command = commands[action.action_id] || defaultCommand;
 
-    const blocks = formatFn(await dataFn(action.value));
+    const blocks = await command(action.value);
 
     service.sendMessage(channel, "This is an action", blocks);
   } catch (e) {

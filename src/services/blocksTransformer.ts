@@ -15,16 +15,18 @@ import { createFlowImage } from "../utils/imageCreator";
 export enum ActionIds {
   FlowDetails = "flow-details",
   Activate = "activate",
+  Deactivate = "deactivate",
   SeeRunHistory = "see-run-history",
 }
 
 const ActionIdToLabel: Readonly<Record<ActionIds, string>> = {
   [ActionIds.Activate]: "Activate",
   [ActionIds.FlowDetails]: "Select",
+  [ActionIds.Deactivate]: "Deactivate",
   [ActionIds.SeeRunHistory]: "See run history",
 };
 
-function actionFactory(action: ActionIds) {
+function actionFactory(action: ActionIds, value = "click_me_123") {
   return {
     type: "button",
     text: {
@@ -32,7 +34,7 @@ function actionFactory(action: ActionIds) {
       text: ActionIdToLabel[action],
       emoji: true,
     },
-    value: "click_me_123",
+    value,
     action_id: action,
   };
 }
@@ -82,13 +84,29 @@ function buildStatus(flow: Readonly<FlowSummary>): string {
   return flow.hasError ? ":error:" : ":active:";
 }
 
-export async function flowToBlocks(flow: FlowProject, connections: ConnectionListResponse): Promise<any> {
+export async function flowToBlocks(
+  flow: FlowProject,
+  connections: ConnectionListResponse,
+  flowLaunchUrl: string,
+): Promise<any> {
   const flowBlocks = await getFlowBlocks(flow, connections);
   return [
     ...flowBlocks,
     {
       type: "actions",
-      elements: [actionFactory(ActionIds.Activate), actionFactory(ActionIds.SeeRunHistory)],
+      elements: [
+        actionFactory(ActionIds.Activate, flow.id),
+        actionFactory(ActionIds.SeeRunHistory, flow.id),
+        {
+          type: "button",
+          text: {
+            type: "plain_text",
+            text: "View in Browser",
+            emoji: true,
+          },
+          url: flowLaunchUrl,
+        },
+      ],
     },
   ];
 }

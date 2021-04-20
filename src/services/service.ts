@@ -1,4 +1,6 @@
+import { inspect } from "util";
 import * as superagent from "superagent";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 require("dotenv").config();
 
 export async function sendMessage(channel: string, text: string, blocks?: unknown): Promise<superagent.Response> {
@@ -17,7 +19,11 @@ export async function sendMessage(channel: string, text: string, blocks?: unknow
       "X-Slack-No-Retry": 1,
     })
     .retry(0)
-    .send({ text, channel, blocks });
+    .send({ text, channel, blocks })
+    .then((response) => {
+      console.log("Slack responded with", response.status, response.body, channel, text, inspect(blocks, false, 10));
+      return response;
+    });
 }
 
 /*

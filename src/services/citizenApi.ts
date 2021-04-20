@@ -2,6 +2,7 @@ import { ConnectionListResponse } from "../common/types/Connection";
 import { FlowProject, FlowSummaryList } from "../common/types/FlowProject";
 import { RunHistoryRecord } from "../common/types/RunHistory";
 import * as fetch from "isomorphic-fetch";
+import { FlowStatusResponse } from "../common/types/Design";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 require("dotenv").config();
 
@@ -49,7 +50,7 @@ export async function getFlows(options?: GetFlowsOptions): Promise<FlowSummaryLi
   const pageSize = options?.pageSize || 10;
   const orgId = await getOrgId();
   const flowList = await makeApiCall<FlowSummaryList>(
-    `https://citizen-platform-xapi-service.kqa.msap.io/api/v1/organizations/${orgId}/flows/?pageIndex=0&pageSize=${pageSize}&orderBy=updateDate`,
+    `https://citizen-platform-xapi-service.kqa.msap.io/api/v1/organizations/${orgId}/flows/?pageIndex=0&pageSize=${pageSize}&orderBy=-updateDate`,
   );
 
   const flowListWithExecutions = {
@@ -70,6 +71,51 @@ export async function getFlows(options?: GetFlowsOptions): Promise<FlowSummaryLi
   return flowListWithExecutions;
 }
 
+function btoa(str: string): string {
+  // create buffer from string
+  const binaryData = Buffer.from(str, "utf8");
+
+  // decode buffer as base64
+  return binaryData.toString("base64");
+}
+
+/**
+ * get the launch URL for a given flow
+ */
+export async function getLaunchUrlForFlow(flowId: string): Promise<string> {
+  const token = await getToken();
+  const url = `https://qax.composer.mulesoft.com/silentLogin#access_token=${
+    token.access_token
+  }&token_type=bearer&state=${btoa(JSON.stringify({ flowId }))}`;
+  console.log(url);
+  return url;
+}
+
+export async function executeFlowById(flowId: string): Promise<unknown> {
+  // TODO return type
+  const orgId = await getOrgId();
+  const flow: FlowProject = await getFlowById(flowId);
+  const url = `https://citizen-platform-xapi-service.kqa.msap.io/api/v1/organizations/${orgId}/flows/${flowId}/execute`;
+  console.log("ACTIVATING", flowId);
+  const response = await makeApiCall(url, "POST", JSON.stringify({ flow }));
+  console.log("flow:", flow);
+  console.log("RESPONSE", response);
+  return response;
+}
+
+export async function stopFlowById(flowId: string): Promise<unknown> {
+  // POST /id/stop, no body
+  const orgId = await getOrgId();
+  const url = `https://citizen-platform-xapi-service.kqa.msap.io/api/v1/organizations/${orgId}/flows/${flowId}/stop`;
+  return makeApiCall(url, "POST", {});
+}
+
+export async function getFlowStatus(flowId: string): Promise<FlowStatusResponse> {
+  const orgId = await getOrgId();
+  const url = `https://citizen-platform-xapi-service.kqa.msap.io/api/v1/organizations/${orgId}/flows/${flowId}/status`;
+  return await makeApiCall<FlowStatusResponse>(url);
+}
+
 export async function getFlowById(flowId: string): Promise<FlowProject> {
   const orgId = await getOrgId();
   const flowUrl = `https://citizen-platform-xapi-service.kqa.msap.io/api/v1/organizations/${orgId}/flows/${flowId}`;
@@ -88,7 +134,7 @@ export async function getConnections(): Promise<ConnectionListResponse> {
   return await cache.retrieve(url, () => makeApiCall<ConnectionListResponse>(url));
 }
 
-async function makeApiCall<TResponse = any>(url: string): Promise<TResponse> {
+async function makeApiCall<TResponse = any>(url: string, method = "GET", body: any = null): Promise<TResponse> {
   console.log(`querying ${url}`);
   const { access_token } = await getToken();
   const result = await fetch(url, {
@@ -100,11 +146,12 @@ async function makeApiCall<TResponse = any>(url: string): Promise<TResponse> {
       pragma: "no-cache",
       "x-requested-with": "XMLHttpRequest",
       "x-session-id": "d99b8f9e-63c9-4069-ba82-b8710885c89e",
+      "content-type": "application/json",
     },
     referrer: "https://qax.composer.mulesoft.com/",
     referrerPolicy: "strict-origin-when-cross-origin",
-    body: null,
-    method: "GET",
+    body,
+    method,
     mode: "cors",
     credentials: "include",
   });

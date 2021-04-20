@@ -1,0 +1,11 @@
+enum TestStatus {
+  NOT_STARTED = "NOT_STARTED",
+  STARTING = "STARTING",
+  PENDING = "PENDING",
+  STOPPING = "STOPPING",
+  GETTING_MESSAGES = "GETTING_MESSAGES",
+  DONE = "DONE",
+  FAILED = "FAILED",
+}
+
+export default TestStatus;

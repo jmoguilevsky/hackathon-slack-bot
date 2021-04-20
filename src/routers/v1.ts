@@ -1,4 +1,5 @@
 import * as express from "express";
+import FlowStatus from "../common/enums/FlowStatus.enum";
 import { FlowSummaryList } from "../common/types/FlowProject";
 import { ActionIds, flowListToBlocks, flowToBlocks } from "../services/blocksTransformer";
 import * as citizenApi from "../services/citizenApi";
@@ -59,7 +60,7 @@ router.post("/", async (req, res, next) => {
 
   let flows: FlowSummaryList | undefined;
   try {
-    flows = await citizenApi.getFlows();
+    flows = await citizenApi.getFlows({ pageSize: 5 });
   } catch (e) {
     console.error("Error fetching flows", e.stack);
     next(e);
@@ -68,7 +69,7 @@ router.post("/", async (req, res, next) => {
 
   const { channel } = body.event;
   try {
-    service.sendMessage(channel, "This is a test", flows && flowListToBlocks(flows));
+    service.sendMessage(channel, "Here are the flows", flows && flowListToBlocks(flows));
   } catch (error) {
     console.log("error", error.stack);
     next(error);
@@ -77,23 +78,39 @@ router.post("/", async (req, res, next) => {
 
 // ---
 
-type Command = (value: string) => unknown; // it outputs a blocks array
+type Command = (value: string, channel: string) => Promise<{ text: string; blocks: unknown }>; // it outputs a blocks array
 
-const defaultCommand: Command = async () => undefined;
+const defaultCommand: Command = async () => ({ text: "Default response", blocks: undefined });
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const commands: Record<ActionIds, Command> = {
-  [ActionIds.FlowDetails]: async (flowId) => {
+  [ActionIds.FlowDetails]: async (flowId: string) => {
     console.log(`fetching flow id ${flowId}`);
     const flow = await citizenApi.getFlowById(flowId);
     console.log("fetching connections");
     const connections = await citizenApi.getConnections();
     console.log("Got connections. Mapping to blocks...");
     const history = await citizenApi.getRunHistory(flowId, 1, 1);
+    const flowLaunchUrl = await citizenApi.getLaunchUrlForFlow(flowId);
     console.log(`Got history. ${JSON.stringify(history, null, 4)}`);
-    return flowToBlocks(flow, connections);
+    return {
+      text: "Here is your flow",
+      blocks: await flowToBlocks(flow, connections, flowLaunchUrl),
+    };
   },
-  [ActionIds.Activate]: defaultCommand,
+  [ActionIds.Activate]: async (flowId: string, channel: string) => {
+    await citizenApi.executeFlowById(flowId);
+    const flow = await citizenApi.getFlowById(flowId);
+    await service.sendMessage(channel, `Starting "${flow.name}" :loading:`);
+    await pollForFlowStatus(flowId, FlowStatus.ACTIVE);
+
+    return {
+      text: `Flow "${flow.name}" has started :running:`,
+      blocks: undefined,
+    };
+  },
+  // [ActionIds.Deactivate]: async (flowId: string) => {
+  // },
   [ActionIds.SeeRunHistory]: defaultCommand,
 };
 
@@ -113,12 +130,23 @@ router.post("/interactive-action", async (req, res, next) => {
 
     const command = commands[action.action_id] || defaultCommand;
 
-    const blocks = await command(action.value);
+    const { text, blocks } = await command(action.value, channel);
 
-    service.sendMessage(channel, "This is an action", blocks);
+    await service.sendMessage(channel, text, blocks);
   } catch (e) {
     next(e);
   }
 });
+
+async function pollForFlowStatus(flowId: string, desiredStatus: FlowStatus): Promise<void> {
+  const flowStatus = await citizenApi.getFlowStatus(flowId);
+  const isRunning = flowStatus.status === desiredStatus;
+  if (isRunning) {
+    return;
+  }
+
+  await new Promise((resolve) => setTimeout(resolve, 2000));
+  return pollForFlowStatus(flowId, desiredStatus);
+}
 
 export default router;

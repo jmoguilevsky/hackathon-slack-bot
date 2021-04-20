@@ -41,7 +41,7 @@ export function flowListToBlocks(flows: Readonly<FlowSummaryList>) {
             "type": "section",
             "text": {
                 "type": "mrkdwn",
-                "text": `*${flow.name}*\n_${flow.lastUpdatedDate}_`
+                "text": `*${flow.name}*\n*_${flow.status}_* _${flow.lastUpdatedDate}_`
             },
             "accessory": {
                 "type": "button",

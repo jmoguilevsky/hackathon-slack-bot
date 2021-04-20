@@ -177,6 +177,8 @@ export function getFlowBlocks(flow: FlowProject, connections: ConnectionListResp
     }
     return [...flowDescriptionBlocks, ...stepsDescription, divider, flowImage];
 }
+
+
 // function getFlowSimplifiedSteps(steps: Array<Step>) {
 //     return steps.map((step) => {
 //         if (step.type === 'ACTION' || step.type === 'trigger') {

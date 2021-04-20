@@ -50,7 +50,7 @@ export async function getFlows(options?: GetFlowsOptions): Promise<FlowSummaryLi
 
 export async function getFlowById(flowId: string): Promise<FlowProject> {
     const orgId = await getOrgId();
-    const flowUrl = `https://citizen-platform-xapi-service.kqa.msap.io/api/v1/organizations/${orgId}/flows/${flowId}`;
+    const flowUrl = `https://citizen-platform-xapi-service.kqa.msap.io/api/v1/organizations/${orgId}/flows/${flowId}?readOnly=true`;
     return await cache.retrieve(flowUrl, () => makeApiCall<FlowProject>(flowUrl));
 }
 

@@ -10,6 +10,7 @@ import {
   FlowSummaryList,
   Step,
 } from "../common/types/FlowProject";
+import { RunHistoryRecord } from "../common/types/RunHistory";
 import { createFlowImage } from "../utils/imageCreator";
 
 export enum ActionIds {
@@ -41,6 +42,27 @@ function actionFactory(action: ActionIds, value = "click_me_123") {
   };
 }
 
+export function runHistoryToBlocks(runHistory: Array<RunHistoryRecord>): unknown {
+  return runHistory.map((entry) => {
+    const start = new Date(entry.start_date_time);
+    const finish = new Date(entry.end_date_time);
+    const duration = finish.getTime() - start.getTime();
+    return {
+      type: "context",
+      elements: [
+        {
+          type: "mrkdwn",
+          text: `${entry.start_date_time} (${duration})`,
+        },
+        {
+          type: "mrkdwn",
+          text: `${entry.status}`,
+        },
+      ],
+    };
+  });
+}
+
 export function flowListToBlocks(flows: Readonly<FlowSummaryList>): unknown {
   // turn into blocks
   return [
@@ -51,29 +73,32 @@ export function flowListToBlocks(flows: Readonly<FlowSummaryList>): unknown {
         text: "Which flow would you like to see details for?",
       },
     },
-    ...flows.results.reduce<Array<any>>((blocks, flow) => [
-      ...blocks,
-      {
-          "type": "section",
-          "text": {
-              "type": "mrkdwn",
-              "text": `*${flow.name}*\n${flow.lastUpdatedDate} \t\t${buildStatus(flow)}\t*${flow.status.toUpperCase()}*`
+    ...flows.results.reduce<Array<any>>(
+      (blocks, flow) => [
+        ...blocks,
+        {
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text: `*${flow.name}*\n${flow.lastUpdatedDate} \t\t${buildStatus(flow)}\t*${flow.status.toUpperCase()}*`,
           },
-          "accessory": {
-              "type": "button",
-              "text": {
-                  "type": "plain_text",
-                  "text": "Select",
-                  "emoji": true
-              },
-              "value": flow.id,
-              "action_id": ActionIds.FlowDetails
-          }
-      },
-      {
-          "type": "divider"
-      }
-  ], [])
+          accessory: {
+            type: "button",
+            text: {
+              type: "plain_text",
+              text: "Select",
+              emoji: true,
+            },
+            value: flow.id,
+            action_id: ActionIds.FlowDetails,
+          },
+        },
+        {
+          type: "divider",
+        },
+      ],
+      [],
+    ),
   ];
 }
 

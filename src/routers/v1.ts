@@ -42,6 +42,11 @@ router.post('/', async (req, res, next) => {
   }
 
   const {text, type} = body.event
+  if (!text) {
+    console.log('Skipping as it has no text');
+    return;
+  }
+
   const botId = process.env.BOT_ID;
   if (!botId) {
     throw new Error('Missing BOT_ID');
@@ -66,12 +71,13 @@ router.post('/', async (req, res, next) => {
     service.sendMessage(channel, 'This is a test', flows && flowListToBlocks(flows));
   } catch (error) {
     console.log('error', error.stack);
+    next(error);
   }
 });
 
 router.post('/interactive-action', async (req, res, next) => {
   try {
-    res.status(200).end();
+    setTimeout(() => res.status(200).end(), 1500);
 
     const payload = JSON.parse(req.body.payload);
     // console.log(inspect(payload, false, 10));

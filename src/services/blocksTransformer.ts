@@ -1,3 +1,4 @@
+import FlowStatus from "../common/enums/FlowStatus.enum";
 import { Connection, ConnectionListResponse } from "../common/types/Connection";
 import {
   Condition,
@@ -46,31 +47,39 @@ export function flowListToBlocks(flows: Readonly<FlowSummaryList>): unknown {
         text: "Which flow would you like to see details for?",
       },
     },
-    ...flows.results.map((flow) => ({
-      type: "section",
-      text: {
-        type: "mrkdwn",
-        text: `*${flow.name}*\n*_${flow.status}${buildStatus(flow)}_* _Last updated: ${flow.lastUpdatedDate}_`,
+    ...flows.results.reduce<Array<any>>((blocks, flow) => [
+      ...blocks,
+      {
+          "type": "section",
+          "text": {
+              "type": "mrkdwn",
+              "text": `*${flow.name}*\n${flow.lastUpdatedDate} \t\t${buildStatus(flow)}\t*${flow.status.toUpperCase()}*`
+          },
+          "accessory": {
+              "type": "button",
+              "text": {
+                  "type": "plain_text",
+                  "text": "Select",
+                  "emoji": true
+              },
+              "value": flow.id,
+              "action_id": ActionIds.FlowDetails
+          }
       },
-      accessory: {
-        type: "button",
-        text: {
-          type: "plain_text",
-          text: "Select",
-          emoji: true,
-        },
-        value: flow.id,
-        action_id: ActionIds.FlowDetails,
-      },
-    })),
+      {
+          "type": "divider"
+      }
+  ], [])
   ];
 }
 
 function buildStatus(flow: Readonly<FlowSummary>): string {
-  if (!flow.hasStatus) {
-    return "";
+  if (flow.status === FlowStatus.INACTIVE) {
+    return ":inactive:";
+  } else if (!flow.hasStatus) {
+    return ":no_status_flow:";
   }
-  return flow.hasError ? " :x:" : " :white_check_mark:";
+  return flow.hasError ? ":error:" : ":active:";
 }
 
 export async function flowToBlocks(flow: FlowProject, connections: ConnectionListResponse): Promise<any> {

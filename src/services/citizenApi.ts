@@ -49,7 +49,7 @@ export async function getFlows(options?: GetFlowsOptions): Promise<FlowSummaryLi
   const pageSize = options?.pageSize || 10;
   const orgId = await getOrgId();
   const flowList = await makeApiCall<FlowSummaryList>(
-    `https://citizen-platform-xapi-service.kqa.msap.io/api/v1/organizations/${orgId}/flows/?pageIndex=1&pageSize=${pageSize}&orderBy=updateDate`,
+    `https://citizen-platform-xapi-service.kqa.msap.io/api/v1/organizations/${orgId}/flows/?pageIndex=0&pageSize=${pageSize}`,
   );
 
   const flowListWithExecutions = {

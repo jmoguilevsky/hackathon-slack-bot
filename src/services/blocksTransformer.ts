@@ -1,3 +1,4 @@
+import FlowStatus from "../common/enums/FlowStatus.enum";
 import { Connection, ConnectionListResponse } from "../common/types/Connection";
 import {
   Condition,
@@ -52,7 +53,7 @@ export function flowListToBlocks(flows: Readonly<FlowSummaryList>): unknown {
           "type": "section",
           "text": {
               "type": "mrkdwn",
-              "text": `*${flow.name}*\n${flow.lastUpdatedDate} \t\t*${buildStatus(flow)}*\t:${flow.status}:`
+              "text": `*${flow.name}*\n${flow.lastUpdatedDate} \t\t${buildStatus(flow)}\t*${flow.status.toUpperCase()}*`
           },
           "accessory": {
               "type": "button",
@@ -73,10 +74,12 @@ export function flowListToBlocks(flows: Readonly<FlowSummaryList>): unknown {
 }
 
 function buildStatus(flow: Readonly<FlowSummary>): string {
-  if (!flow.hasStatus) {
-    return "";
+  if (flow.status === FlowStatus.INACTIVE) {
+    return ":inactive:";
+  } else if (!flow.hasStatus) {
+    return ":no_status_flow:";
   }
-  return flow.hasError ? " :x:" : " :white_check_mark:";
+  return flow.hasError ? ":error:" : ":active:";
 }
 
 export async function flowToBlocks(flow: FlowProject, connections: ConnectionListResponse): Promise<any> {

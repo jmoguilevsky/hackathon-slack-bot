@@ -1,7 +1,7 @@
-import StepTypesEnum from '../enums/StepTypes.enum';
-import ConditionCriteriaTypesEnum from '../enums/ConditionCriterias.enum';
-import { Field, TypeModel } from './Metadata';
-import { FieldValue } from './FieldValue';
+import StepTypesEnum from "../enums/StepTypes.enum";
+import ConditionCriteriaTypesEnum from "../enums/ConditionCriterias.enum";
+import { Field, TypeModel } from "./Metadata";
+import { FieldValue } from "./FieldValue";
 
 // TODO: add correct definition
 export interface ConditionBranch {
@@ -72,7 +72,7 @@ export type EventStep = TriggerStep | ActionStep;
 
 export type Step = EmptyStep | EventStep | ConditionalStep | ForEachStep;
 
-export type FlowSteps = [FlowProject['trigger'], ...FlowProject['steps']];
+export type FlowSteps = [FlowProject["trigger"], ...FlowProject["steps"]];
 
 export interface FlowProject {
   id?: string;
@@ -99,6 +99,8 @@ export interface FlowSummary {
   name: string;
   status: string;
   lastUpdatedDate: Date;
+  hasError?: boolean;
+  hasStatus?: boolean;
 }
 
 export interface FlowSummaryList {

@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as OAS from 'express-openapi-validator';
 import { FlowProject } from '../common/types/FlowProject';
 import { getConnections, getFlowById, getFlows } from '../services/citizenApi';
-import { flowListToBlocks, mapFlowDescription } from '../services/blocksTransformer';
+import { flowListToBlocks, flowToBlocks } from '../services/blocksTransformer';
 const fetch = require('isomorphic-fetch');
 
 const router = express.Router();
@@ -44,10 +44,8 @@ router.get("/flow/:flowId", async (req, res) => {
 
     const connections = await getConnections();
 
-    const blocks = mapFlowDescription(result, connections);
-    console.log(JSON.stringify(blocks, null, 3));
-
-    res.send(result);
+    const blocks = flowToBlocks(result, connections);
+    res.send(blocks);
   } catch (e) {
     res.send(e).status(500);
   }

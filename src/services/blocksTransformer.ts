@@ -56,45 +56,9 @@ export function flowListToBlocks(flows: Readonly<FlowSummaryList>) {
     ];
 }
 
-export function flowToBlocks(flow: FlowProject) {
+export function flowToBlocks(flow: FlowProject, connections: ConnectionListResponse) {
     return [
-        {
-            "type": "header",
-            "text": {
-                "type": "plain_text",
-                "text": flow.name,
-                "emoji": true
-            }
-        },
-        {
-            "type": "section",
-            "text": {
-                "type": "mrkdwn",
-                "text": "*TRIGGER*: When a new *Contact* is created in salesforce :salesforce: (Org1)"
-            }
-        },
-        {
-            "type": "section",
-            "text": {
-                "type": "mrkdwn",
-                "text": "A *Contact* is created in salesforce :salesforce: (Org1)"
-            }
-        },
-        {
-            "type": "section",
-            "text": {
-                "type": "mrkdwn",
-                "text": "*IF* Email equals `capo@gmail.com` *THEN*\n\tA *Contact* is created in salesforce :salesforce: (Org3)"
-            }
-        },
-        {
-            "type": "image",
-            "image_url": "https://miro.medium.com/max/3840/1*h-ToKg2-sQf4H5aIGF3tlw.png",
-            "alt_text": "inspiration"
-        },
-        {
-            "type": "divider"
-        },
+        ...getFlowBlocks(flow, connections),
         {
             "type": "actions",
             "elements": [
@@ -179,7 +143,7 @@ function getStepsDescription(steps: Array<Step>, connectionsById: ConnectionById
         return descriptions;
     }, []);
 }
-export function mapFlowDescription(flow: FlowProject, connections: ConnectionListResponse) {
+export function getFlowBlocks(flow: FlowProject, connections: ConnectionListResponse) {
     const connectionsById = getConnectionsById(connections);
     const flowDescriptionBlocks = [
         {
@@ -211,17 +175,17 @@ export function mapFlowDescription(flow: FlowProject, connections: ConnectionLis
     const divider = {
         "type": "divider"
     }
-    return { blocks: [...flowDescriptionBlocks, ...stepsDescription, divider, flowImage] };
+    return [...flowDescriptionBlocks, ...stepsDescription, divider, flowImage];
 }
-function getFlowSimplifiedSteps(steps: Array<Step>) {
-    return steps.map((step) => {
-        if (step.type === 'ACTION' || step.type === 'trigger') {
-            return { logo: step.connector };
-        }
-        if (step.type === 'CONDITIONAL') {
-            return { logo: 'condition', branches: (step as ConditionalStep).conditionsBranches.map(branch => ({ condition: getBranchConditions(branch), steps: getFlowSimplifiedSteps(branch.steps) })) }
-        }
-    })
-}
+// function getFlowSimplifiedSteps(steps: Array<Step>) {
+//     return steps.map((step) => {
+//         if (step.type === 'ACTION' || step.type === 'trigger') {
+//             return { logo: step.connector };
+//         }
+//         if (step.type === 'CONDITIONAL') {
+//             return { logo: 'condition', branches: (step as ConditionalStep).conditionsBranches.map(branch => ({ condition: getBranchConditions(branch), steps: getFlowSimplifiedSteps(branch.steps) })) }
+//         }
+//     })
+// }
 //console.log(JSON.stringify(mapFlowDescription(exampleFlow)));
 //console.log(JSON.stringify(getFlowSimplifiedSteps(exampleFlow.steps)))

@@ -43,7 +43,7 @@ export async function openModal(view: unknown, triggerId: string) {
     .retry(0)
     .send({ trigger_id: triggerId, view })
     .then((response: unknown) => {
-      console.log("Slack MEELI responded with:", response);
+      console.log("Slack responded with:", response);
       return response;
     });
 }

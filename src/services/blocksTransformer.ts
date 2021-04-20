@@ -164,6 +164,8 @@ const stepDescriptionByName: Record<string, (...t: any) => string> = {
   createSpreadsheetRow: ({ spreadsheetId, worksheetName }) =>
     `A new row is created in spreadsheet ${spreadsheetId} in worksheet ${worksheetName}`,
   postMessageToChannelCitizen: ({ channelName }) => `Post a message to ${channelName}`,
+  findUserByEmailCitizen: ({ emailAddress }) => `User is fetched with email ${emailAddress}`,
+  sendDirectMessageToUserCitizen: ({ message }) => `A message is sent to the user saying ${message}`
 };
 
 function getDescriptionForStepName(step: Step): string {
@@ -175,12 +177,12 @@ function getDescriptionForStepName(step: Step): string {
   return `unknown: "${step.name}"`;
 }
 
-const pillRegex = /(step|foreach).[a-f0-9-]+(.[a-z]+)*(\["[\s\w{}:.]+"\])?/gi;
 const regex = /\[.*?\]/g;
 
 function getDataPillValue(value: any): string {
-  if (pillRegex.test(value)) {
-    return value.match(regex).join("").replace('["', "").replace('"]', "");
+  const matches = value.match(regex);
+  if (matches?.length) {
+    return matches[matches.length -1].replace("[", '').replace("]", '');
   }
   return value;
 }
@@ -205,7 +207,7 @@ function getElseBranchDescription(branch: ElseBranch, connectionsById: Connectio
   if (!branch.steps) {
     return "";
   }
-  return `*ELSE*: If none of the previous conditions apply *THEN* ${getStepsDescription(
+  return `*ELSE*: If none of the previous conditions apply *THEN*\n ${getStepsDescription(
     branch.steps,
     connectionsById,
     nestedTimes + 1,
@@ -263,7 +265,6 @@ export async function getFlowBlocks(flow: FlowProject, connections: ConnectionLi
   }));
 
   await createFlowImage(flow);
-  console.log(`${process.env.SERVER_URI}/static/${flow.name?.replace(/ /g, "_")}.png`);
   const flowImage = {
     type: "image",
     title: {

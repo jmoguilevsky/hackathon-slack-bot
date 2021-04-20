@@ -113,7 +113,7 @@ const commands: Record<ActionIds, Command> = {
   // [ActionIds.Deactivate]: async (flowId: string) => {
   // },
   [ActionIds.SeeRunHistory]: defaultCommand,
-  [ActionIds.ScheduleActivation]: async (flowId, name2, triggerId) => {
+  [ActionIds.ScheduleActivation]: async (flowId, channelId, triggerId) => {
     const modal = {
       "title": {
         "type": "plain_text",
@@ -123,7 +123,7 @@ const commands: Record<ActionIds, Command> = {
         "type": "plain_text",
         "text": "Submit"
       },
-      "private_metadata": flowId,
+      "private_metadata": `${flowId}|${channelId}`,
       "blocks": [
         {
           "type": "section",
@@ -173,9 +173,12 @@ router.post("/interactive-action", async (req, res, next) => {
 
     if (payload.type === 'view_submission') {
       const values = payload.view?.state?.values;
-      const flowId = payload.view?.private_metadata;
+      const metadataValues = payload.view?.private_metadata.split('|');
+      const flowId = metadataValues[0];
+      const channelId = metadataValues[1];
       console.log(values);
-      console.log(flowId)
+      console.log(metadataValues)
+      console.log(flowId, channelId)
       // TODO: Execute reminder
       return;
     }

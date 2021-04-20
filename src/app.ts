@@ -1,11 +1,12 @@
-import * as express from 'express';
-import * as helmet from 'helmet';
-import * as bp from 'body-parser';
-import logging from './middlewares/logging';
-import errorHandling from './middlewares/errorHandling';
-import v1Router from './routers/v1';
-import testRouter from './routers/test';
+import * as bp from "body-parser";
+import * as express from "express";
+import * as helmet from "helmet";
+import errorHandling from "./middlewares/errorHandling";
+import logging from "./middlewares/logging";
+import testRouter from "./routers/test";
+import v1Router from "./routers/v1";
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 require("dotenv").config();
 
 // TODO:
@@ -21,8 +22,8 @@ app.use(bp.json({ strict: true }), bp.text(), bp.urlencoded({ extended: false })
 app.use(logging);
 
 // -- Routers
-app.use('/v1', v1Router);
-app.use('/test', testRouter);
+app.use("/v1", v1Router);
+app.use("/test", testRouter);
 
 // -- Final configs
 app.use(errorHandling);

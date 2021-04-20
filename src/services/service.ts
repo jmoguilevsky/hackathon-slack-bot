@@ -11,9 +11,10 @@ export async function sendMessage(channel: string, text: string, blocks?: unknow
   console.log("Posting message to slack", channel, text);
   return superagent
     .post(`${baseUri}/chat.postMessage`)
-    .set("Authorization", `Bearer ${token}`)
-    .set("Accept", "application/json")
-    .set("X-Slack-No-Retry", "1")
+    .set({
+      Authorization: `Bearer ${token}`,
+      "X-Slack-No-Retry": 1,
+    })
     .retry(0)
     .send({ text, channel, blocks });
 }

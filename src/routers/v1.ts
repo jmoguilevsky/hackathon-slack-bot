@@ -64,6 +64,7 @@ router.post("/", async (req, res, next) => {
   } catch (e) {
     console.error("Error fetching flows", e.stack);
     next(e);
+    return;
   }
 
   const { channel } = body.event;

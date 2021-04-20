@@ -1,13 +1,6 @@
 import * as fetch from "isomorphic-fetch";
 import * as superagent from "superagent";
 
-const token = process.env.TOKEN;
-const baseUri = process.env.SLACK_API;
-
-if (!token || !baseUri) {
-  console.error('Missing environment variables TOKEN or SLACK_API');
-}
-
 const sampleBlocks = [
   {
     "type": "section",
@@ -121,6 +114,13 @@ const sampleBlocks = [
 ];
 
 export async function sendMessage(channel: string, text: string, blocks?: any) {
+  const token = process.env.TOKEN;
+  const baseUri = process.env.SLACK_API;
+
+  if (!token || !baseUri) {
+    throw new Error('Missing environment variables TOKEN or SLACK_API');
+  }
+
   console.log('Posting message to slack', channel, text);
   return superagent.post(`${baseUri}/chat.postMessage`)
     .set('Authorization', `Bearer ${token}`)

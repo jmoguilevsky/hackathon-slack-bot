@@ -42,7 +42,11 @@ router.post('/', async (req, res, next) => {
   }
 
   const {text, type} = body.event
-  if (!text.includes('<@U01V54MAS49>') || type !== 'message') {
+  const botId = process.env.BOT_ID;
+  if (!botId) {
+    throw new Error('Missing BOT_ID');
+  }
+  if (!text.includes(`<@${botId}>`) || type !== 'message') {
     console.log('Skipping as message is not directed at us or it was not a message');
     return;
   }

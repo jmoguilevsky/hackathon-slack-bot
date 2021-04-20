@@ -42,7 +42,7 @@ router.post('/', async (req, res, next) => {
   }
 
   const {text, type} = body.event
-  if (!text.includes('<@U01V54MAS49>') || type !== 'message') {
+  if (!text.includes('U01V6BCTGQ1') || type !== 'app_mention') {
     console.log('Skipping as message is not directed at us or it was not a message');
     return;
   }
@@ -77,7 +77,8 @@ router.post('/interactive-action', async (req, res, next) => {
       const flowId = payload.actions[0].value;
       console.log(`fetching flow id ${flowId}`);
       const flow = await getFlowById(flowId);
-      service.sendMessage(channel, 'This is an action', flowToBlocks(flow));
+      const connections = await citizenApi.getConnections();
+      service.sendMessage(channel, 'This is an action', flowToBlocks(flow,connections));
     } else {
       service.sendMessage(channel, 'This is an action', []);
     }

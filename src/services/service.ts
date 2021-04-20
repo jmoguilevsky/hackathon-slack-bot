@@ -1,5 +1,6 @@
 import * as fetch from "isomorphic-fetch";
 import * as superagent from "superagent";
+require("dotenv").config();
 
 const token = process.env.TOKEN;
 const baseUri = process.env.SLACK_API;

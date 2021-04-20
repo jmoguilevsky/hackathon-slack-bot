@@ -81,7 +81,7 @@ const commands: Record<ActionIds, Command> = {
         type: "plain_text",
         text: "Submit",
       },
-      private_metadata: flowId,
+      private_metadata: `${flowId}|${channel}`,
       blocks: [
         {
           type: "section",

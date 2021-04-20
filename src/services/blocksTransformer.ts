@@ -1,4 +1,5 @@
-import { FlowProject, FlowSummaryList } from "../common/types/FlowProject";
+import { Connection, ConnectionListResponse } from "../common/types/Connection";
+import { Condition, ConditionalStep, ConditionBranch, ElseBranch, FlowProject, FlowSummaryList, Step } from "../common/types/FlowProject";
 
 export enum ActionIds {
     FlowDetails = 'flow-details',
@@ -39,7 +40,7 @@ export function flowListToBlocks(flows: Readonly<FlowSummaryList>) {
             "type": "section",
             "text": {
                 "type": "mrkdwn",
-                "text": `*${flow.name}*\n_${flow.lastUpdatedDate}_`
+                "text": `*${flow.name}*\n*_${flow.status}_* _${flow.lastUpdatedDate}_`
             },
             "accessory": {
                 "type": "button",
@@ -55,45 +56,9 @@ export function flowListToBlocks(flows: Readonly<FlowSummaryList>) {
     ];
 }
 
-export function flowToBlocks(flow: FlowProject) {
+export function flowToBlocks(flow: FlowProject, connections: ConnectionListResponse) {
     return [
-        {
-            "type": "header",
-            "text": {
-                "type": "plain_text",
-                "text": flow.name,
-                "emoji": true
-            }
-        },
-        {
-            "type": "section",
-            "text": {
-                "type": "mrkdwn",
-                "text": "*TRIGGER*: When a new *Contact* is created in salesforce :salesforce: (Org1)"
-            }
-        },
-        {
-            "type": "section",
-            "text": {
-                "type": "mrkdwn",
-                "text": "A *Contact* is created in salesforce :salesforce: (Org1)"
-            }
-        },
-        {
-            "type": "section",
-            "text": {
-                "type": "mrkdwn",
-                "text": "*IF* Email equals `capo@gmail.com` *THEN*\n\tA *Contact* is created in salesforce :salesforce: (Org3)"
-            }
-        },
-        {
-            "type": "image",
-            "image_url": "https://miro.medium.com/max/3840/1*h-ToKg2-sQf4H5aIGF3tlw.png",
-            "alt_text": "inspiration"
-        },
-        {
-            "type": "divider"
-        },
+        ...getFlowBlocks(flow, connections),
         {
             "type": "actions",
             "elements": [
@@ -103,3 +68,126 @@ export function flowToBlocks(flow: FlowProject) {
         }
     ];
 }
+
+interface ConnectionById { [connectionId: string]: Connection };
+
+function getConnectionsById(connections: ConnectionListResponse): ConnectionById {
+    return connections.data.reduce<ConnectionById>((map, connection) => {
+        map[connection.id] = connection;
+        return map;
+    }, {});
+}
+
+const stepDescriptionByName: Record<string, (...t: any) => string> = {
+    'new-object-listener': ({ objectType }: { objectType: string }) => `*TRIGGER*: When a new *${objectType}* is created`,
+    'modified-object-listener': ({ objectType }: { objectType: string }) => `*TRIGGER*: When a *${objectType}* is created or updated`,
+    'deleted-object-listener': ({ objectType }: { objectType: string }) => `*TRIGGER*: When a *${objectType}* is deleted`,
+    'createRecord': ({ objectType }: { objectType: string }) => `A *${objectType}* is created`,
+    'updateRecord': ({ objectType }: { objectType: string }) => `A *${objectType}* is updated`,
+    'query': ({ salesforceQuery: { objectType, conditions } }) => `All *${objectType}* ${conditions.length ? 'where asdas equals AND bla equals 3' : ''} are fetched`,
+    'upsertRecord': ({ objectType }: { objectType: string }) => `A *${objectType}* is created or updated`,
+    'deleteRecord': ({ objectType }: { objectType: string }) => `A *${objectType}* is deleted`,
+    'createSpreadsheetRow': ({ spreadsheetId, worksheetName }) => `A new row is created in spreasheet ${spreadsheetId} in worksheet ${worksheetName}`,
+    'postMessageToChannelCitizen': ({ channelName }) => `Post a message to ${channelName}`
+}
+function getDescriptionForStepName(step: Step): string {
+    const name = step.name;
+    if (name && name in stepDescriptionByName) {
+        return stepDescriptionByName[name](step.fieldValues);
+    }
+
+    return `unknown: "${step.name}"`;
+}
+const pillRegex = /(step|foreach).[a-f0-9-]+(.[a-z]+)*(\["[\s\w{}:.]+"\])?/gi;
+const regex = /\[.*?\]/g;
+function getDataPillValue(value: any): string {
+    if (pillRegex.test(value)) {
+        return value.match(regex).join('').replace('["', '').replace('"]', '');
+    }
+    return value;
+}
+function getConditionDescription(condition: Condition) {
+    return `${getDataPillValue(condition.field)} ${condition.operator} ${getDataPillValue(condition.value)}`
+}
+function getBranchConditions(branch: ConditionBranch) {
+    return branch.conditions?.map(getConditionDescription).join(branch.criteria);
+}
+function getIfBranchDescription(branch: ConditionBranch, connectionsById: ConnectionById, nestedTimes: number): string {
+    return `*IF* ${getBranchConditions(branch)} *THEN*\n ${getStepsDescription(branch.steps, connectionsById, nestedTimes + 1)}`;
+}
+function getElseBranchDescription(branch: ElseBranch, connectionsById: ConnectionById, nestedTimes: number): string {
+    if (!branch.steps) {
+        return '';
+    }
+    return `*ELSE*: If none of the previous conditions apply *THEN* ${getStepsDescription(branch.steps, connectionsById, nestedTimes + 1).join('')}`
+}
+function getConditionalDescription(step: ConditionalStep, connectionsById: ConnectionById, nestedTimes: number) {
+    let description = step.conditionsBranches.map((branch) => getIfBranchDescription(branch, connectionsById, nestedTimes)).join('');
+    if (step.elseBranch) {
+        description += getElseBranchDescription(step.elseBranch, connectionsById, nestedTimes);
+    }
+    return description;
+}
+function getStepsDescription(steps: Array<Step>, connectionsById: ConnectionById, nestedTimes = 0) {
+    return steps.reduce<Array<string>>((descriptions, step) => {
+        if (step.type === 'CONDITIONAL') {
+            const conditionalDes = getConditionalDescription(step as ConditionalStep, connectionsById, nestedTimes);
+            return [...descriptions, `${"\t".repeat(nestedTimes)}${conditionalDes}`];
+        }
+        if (step.name) {
+            const connection = step.connectionId ? connectionsById[step.connectionId] : null;
+            if (!connection) { console.warn(`unable to find connection id ${step.connectionId}`); }
+            const stepDes = `${getDescriptionForStepName(step)} in ${step.connector} :${step.connector}: (${connection?.name})\n`;
+            return [...descriptions, `${"\t".repeat(nestedTimes)}${stepDes}`];
+        }
+        return descriptions;
+    }, []);
+}
+export function getFlowBlocks(flow: FlowProject, connections: ConnectionListResponse) {
+    const connectionsById = getConnectionsById(connections);
+    const flowDescriptionBlocks = [
+        {
+            "type": "header",
+            "text": {
+                "type": "plain_text",
+                "text": flow.name,
+                "emoji": true
+            }
+        },
+    ];
+    const stepsDescription = getStepsDescription([flow.trigger, ...flow.steps], connectionsById).map((description) => ({
+        "type": "section",
+        "text": {
+            "type": "mrkdwn",
+            "text": description
+        }
+    }));
+    const flowImage = {
+        "type": "image",
+        "title": {
+            "type": "plain_text",
+            "text": flow.name,
+            "emoji": true
+        },
+        "image_url": "https://miro.medium.com/max/3840/1*h-ToKg2-sQf4H5aIGF3tlw.png",
+        "alt_text": "inspiration"
+    };
+    const divider = {
+        "type": "divider"
+    }
+    return [...flowDescriptionBlocks, ...stepsDescription, divider, flowImage];
+}
+
+
+// function getFlowSimplifiedSteps(steps: Array<Step>) {
+//     return steps.map((step) => {
+//         if (step.type === 'ACTION' || step.type === 'trigger') {
+//             return { logo: step.connector };
+//         }
+//         if (step.type === 'CONDITIONAL') {
+//             return { logo: 'condition', branches: (step as ConditionalStep).conditionsBranches.map(branch => ({ condition: getBranchConditions(branch), steps: getFlowSimplifiedSteps(branch.steps) })) }
+//         }
+//     })
+// }
+//console.log(JSON.stringify(mapFlowDescription(exampleFlow)));
+//console.log(JSON.stringify(getFlowSimplifiedSteps(exampleFlow.steps)))

@@ -1,4 +1,5 @@
 import * as superagent from "superagent";
+require("dotenv").config();
 
 export async function sendMessage(channel: string, text: string, blocks?: unknown): Promise<superagent.Response> {
   const token = process.env.TOKEN;

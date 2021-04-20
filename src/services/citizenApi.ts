@@ -1,31 +1,74 @@
+import { ConnectionListResponse } from '../common/types/Connection';
 import { FlowProject, FlowSummaryList } from '../common/types/FlowProject';
+import { RunHistoryRecord } from '../common/types/RunHistory';
 const fetch = require('isomorphic-fetch');
 require("dotenv").config();
 
 interface TokenResponse { access_token: string };
-
-// fetch initial value for token
-const tokenPromise = login(process.env.USERNAME, process.env.PASSWORD);
-const orgIdPromse: Promise<string> = tokenPromise.then(t => getOrgId(t.access_token));
-
 interface GetFlowsOptions { pageSize: number };
+
+class InMemoryCache {
+    private storage: Map<string, any> = new Map();
+    private get<T>(key: string): Promise<T> | undefined {
+        return this.storage.get(key);
+    }
+    private set<T>(key: string, value: Promise<T>) {
+        this.storage.set(key, value);
+    }
+
+    public async retrieve<T>(key: string, generator: () => Promise<T>): Promise<T> {
+        const value = this.get<T>(key);
+        if (value) {
+            return value;
+        }
+
+        const promise = generator();
+        this.set(key, promise);
+        const result = await promise;
+        return result;
+    }
+}
+const cache = new InMemoryCache();
+
+function getToken(): Promise<TokenResponse> {
+    return cache.retrieve('token', () => login(process.env.USERNAME, process.env.PASSWORD));
+}
+function getOrgId() {
+    return cache.retrieve('orgId', async () => {
+        const token = await getToken();
+        return getOrgIdUsingToken(token.access_token);
+    });
+}
+
 export async function getFlows(options?: GetFlowsOptions): Promise<FlowSummaryList> {
     const pageSize = options?.pageSize || 10;
-    const orgId = await orgIdPromse;
+    const orgId = await getOrgId();
     return await makeApiCall<FlowSummaryList>(
         `https://citizen-platform-xapi-service.kqa.msap.io/api/v1/organizations/${orgId}/flows/?pageIndex=1&pageSize=${pageSize}&orderBy=updateDate`
     );
 }
 
 export async function getFlowById(flowId: string): Promise<FlowProject> {
-    const orgId = await orgIdPromse;
+    const orgId = await getOrgId();
     const flowUrl = `https://citizen-platform-xapi-service.kqa.msap.io/api/v1/organizations/${orgId}/flows/${flowId}`;
-    return await makeApiCall<FlowProject>(flowUrl);
+    return await cache.retrieve(flowUrl, () => makeApiCall<FlowProject>(flowUrl));
+}
+
+export async function getRunHistory(flowId: string, pageNumber = 1, pageSize = 14): Promise<Array<RunHistoryRecord>> {
+    const orgId = await getOrgId();
+    const url = `https://citizen-platform-xapi-service.kqa.msap.io/api/v1/organizations/${orgId}/flows/${flowId}/executionsummaries?page=${pageNumber}&pageSize=${pageSize}`;
+    return await makeApiCall<Array<RunHistoryRecord>>(url);
+}
+
+export async function getConnections(): Promise<ConnectionListResponse> {
+    const orgId = await getOrgId();
+    const url = `https://citizen-platform-xapi-service.kqa.msap.io/api/v1/organizations/${orgId}/connections`;
+    return await cache.retrieve(url, () => makeApiCall<ConnectionListResponse>(url));
 }
 
 async function makeApiCall<TResponse = any>(url: string): Promise<TResponse> {
     console.log(`querying ${url}`);
-    const { access_token } = await tokenPromise;
+    const { access_token } = await getToken();
     const result = await fetch(url, {
         headers: {
             accept: "application/json",
@@ -83,7 +126,7 @@ async function login(username?: string, password?: string): Promise<TokenRespons
     return json;
 }
 
-async function getOrgId(token: string): Promise<string> {
+async function getOrgIdUsingToken(token: string): Promise<string> {
     const url = `https://qax.anypoint.mulesoft.com/accounts/api/profile`;
 
     const result = await fetch(url, { headers: { Authorization: `bearer ${token}` } });

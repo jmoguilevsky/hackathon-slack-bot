@@ -1,5 +1,6 @@
 import { Connection, ConnectionListResponse } from "../common/types/Connection";
 import { Condition, ConditionalStep, ConditionBranch, ElseBranch, FlowProject, FlowSummaryList, Step } from "../common/types/FlowProject";
+import { createFlowImage } from "../utils/imageCreator";
 
 export enum ActionIds {
     FlowDetails = 'flow-details',
@@ -56,9 +57,10 @@ export function flowListToBlocks(flows: Readonly<FlowSummaryList>) {
     ];
 }
 
-export function flowToBlocks(flow: FlowProject, connections: ConnectionListResponse) {
+export async function flowToBlocks(flow: FlowProject, connections: ConnectionListResponse) {
+    const flowBlocks = await getFlowBlocks(flow, connections);
     return [
-        ...getFlowBlocks(flow, connections),
+        ...flowBlocks,
         {
             "type": "actions",
             "elements": [
@@ -84,11 +86,12 @@ const stepDescriptionByName: Record<string, (...t: any) => string> = {
     'deleted-object-listener': ({ objectType }: { objectType: string }) => `*TRIGGER*: When a *${objectType}* is deleted`,
     'createRecord': ({ objectType }: { objectType: string }) => `A *${objectType}* is created`,
     'updateRecord': ({ objectType }: { objectType: string }) => `A *${objectType}* is updated`,
-    'query': ({ salesforceQuery: { objectType, conditions } }) => `All *${objectType}* ${conditions.length ? 'where asdas equals AND bla equals 3' : ''} are fetched`,
+    'query': ({ salesforceQuery: { objectType, conditions } }) => `All *${objectType}s* ${conditions.length ? 'where asdas equals AND bla equals 3' : ''} are fetched`,
     'upsertRecord': ({ objectType }: { objectType: string }) => `A *${objectType}* is created or updated`,
     'deleteRecord': ({ objectType }: { objectType: string }) => `A *${objectType}* is deleted`,
     'createSpreadsheetRow': ({ spreadsheetId, worksheetName }) => `A new row is created in spreasheet ${spreadsheetId} in worksheet ${worksheetName}`,
-    'postMessageToChannelCitizen': ({ channelName }) => `Post a message to ${channelName}`
+    'postMessageToChannelCitizen': ({ channelName }) => `Post a message to ${channelName}`,
+    'new-spreadsheet-listener': () => '*TRIGGER*: When a new spreadsheet is created'
 }
 function getDescriptionForStepName(step: Step): string {
     const name = step.name;
@@ -113,13 +116,13 @@ function getBranchConditions(branch: ConditionBranch) {
     return branch.conditions?.map(getConditionDescription).join(branch.criteria);
 }
 function getIfBranchDescription(branch: ConditionBranch, connectionsById: ConnectionById, nestedTimes: number): string {
-    return `*IF* ${getBranchConditions(branch)} *THEN*\n ${getStepsDescription(branch.steps, connectionsById, nestedTimes + 1)}`;
+    return `*IF* ${getBranchConditions(branch)} *THEN*\n${getStepsDescription(branch.steps, connectionsById, nestedTimes + 1).join('')}`;
 }
 function getElseBranchDescription(branch: ElseBranch, connectionsById: ConnectionById, nestedTimes: number): string {
     if (!branch.steps) {
         return '';
     }
-    return `*ELSE*: If none of the previous conditions apply *THEN* ${getStepsDescription(branch.steps, connectionsById, nestedTimes + 1).join('')}`
+    return `*ELSE*: If none of the previous conditions apply *THEN*\n ${getStepsDescription(branch.steps, connectionsById, nestedTimes + 1).join('')}`
 }
 function getConditionalDescription(step: ConditionalStep, connectionsById: ConnectionById, nestedTimes: number) {
     let description = step.conditionsBranches.map((branch) => getIfBranchDescription(branch, connectionsById, nestedTimes)).join('');
@@ -136,14 +139,14 @@ function getStepsDescription(steps: Array<Step>, connectionsById: ConnectionById
         }
         if (step.name) {
             const connection = step.connectionId ? connectionsById[step.connectionId] : null;
-            if (!connection) { console.warn(`unable to find connection id ${step.connectionId}`, connectionsById); }
+            if (!connection) { console.warn(`unable to find connection id ${step.connectionId}`); }
             const stepDes = `${getDescriptionForStepName(step)} in ${step.connector} :${step.connector}: (${connection?.name})\n`;
             return [...descriptions, `${"\t".repeat(nestedTimes)}${stepDes}`];
         }
         return descriptions;
     }, []);
 }
-export function getFlowBlocks(flow: FlowProject, connections: ConnectionListResponse) {
+export async function getFlowBlocks(flow: FlowProject, connections: ConnectionListResponse) {
     const connectionsById = getConnectionsById(connections);
     const flowDescriptionBlocks = [
         {
@@ -162,6 +165,8 @@ export function getFlowBlocks(flow: FlowProject, connections: ConnectionListResp
             "text": description
         }
     }));
+
+    await createFlowImage(flow);
     const flowImage = {
         "type": "image",
         "title": {
@@ -169,7 +174,7 @@ export function getFlowBlocks(flow: FlowProject, connections: ConnectionListResp
             "text": flow.name,
             "emoji": true
         },
-        "image_url": "https://miro.medium.com/max/3840/1*h-ToKg2-sQf4H5aIGF3tlw.png",
+        "image_url": `${process.env.SERVER_URI}/static/${flow.name?.replace(' ', '_')}.png`,
         "alt_text": "inspiration"
     };
     const divider = {
@@ -177,7 +182,6 @@ export function getFlowBlocks(flow: FlowProject, connections: ConnectionListResp
     }
     return [...flowDescriptionBlocks, ...stepsDescription, divider, flowImage];
 }
-
 
 // function getFlowSimplifiedSteps(steps: Array<Step>) {
 //     return steps.map((step) => {

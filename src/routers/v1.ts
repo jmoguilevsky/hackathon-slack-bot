@@ -78,7 +78,9 @@ router.post('/interactive-action', async (req, res, next) => {
       console.log(`fetching flow id ${flowId}`);
       const flow = await getFlowById(flowId);
       const connections = await citizenApi.getConnections();
-      service.sendMessage(channel, 'This is an action', flowToBlocks(flow,connections));
+      const flowBlocks = await flowToBlocks(flow,connections);
+      console.log(flowBlocks);
+      service.sendMessage(channel, 'This is an action', flowBlocks);
     } else {
       service.sendMessage(channel, 'This is an action', []);
     }

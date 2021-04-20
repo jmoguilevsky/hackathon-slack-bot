@@ -20,6 +20,9 @@ app.use(bp.json({ strict: true }), bp.text(), bp.urlencoded({ extended: false })
 
 app.use(logging);
 
+app.use('/static', express.static('public'))
+
+
 // -- Routers
 app.use('/v1', v1Router);
 app.use('/test', testRouter);

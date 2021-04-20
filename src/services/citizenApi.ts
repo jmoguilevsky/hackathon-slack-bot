@@ -37,13 +37,13 @@ export async function getFlows(options?: GetFlowsOptions): Promise<FlowSummaryLi
     const pageSize = options?.pageSize || 10;
     const orgId = await orgIdPromse;
     return await makeApiCall<FlowSummaryList>(
-        `https://citizen-platform-xapi-service.kqa.msap.io/api/v1/organizations/${orgId}/flows/?pageIndex=1&pageSize=${pageSize}&orderBy=updateDate`
+        `https://citizen-platform-xapi-service.kqa.msap.io/api/v1/organizations/${orgId}/flows/?pageIndex=0&pageSize=${pageSize}`
     );
 }
 
 export async function getFlowById(flowId: string): Promise<FlowProject> {
     const orgId = await orgIdPromse;
-    const flowUrl = `https://citizen-platform-xapi-service.kqa.msap.io/api/v1/organizations/${orgId}/flows/${flowId}`;
+    const flowUrl = `https://citizen-platform-xapi-service.kqa.msap.io/api/v1/organizations/${orgId}/flows/${flowId}?readOnly=true`;
     return await cache.retrieve(flowUrl, () => makeApiCall<FlowProject>(flowUrl));
 }
 

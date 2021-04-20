@@ -123,6 +123,7 @@ const sampleBlocks = [
 
 export async function sendMessage(channel: string, text: string, blocks?: any) {
   console.log('Posting message to slack', channel, text);
+  console.log(blocks);
   return superagent.post(`${baseUri}/chat.postMessage`)
     .set('Authorization', `Bearer ${token}`)
     .set('Accept', 'application/json')

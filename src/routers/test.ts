@@ -2,8 +2,8 @@ import * as express from 'express';
 import * as path from 'path';
 import * as OAS from 'express-openapi-validator';
 import { FlowProject } from '../common/types/FlowProject';
-import { getFlowById, getFlows } from '../services/citizenApi';
-import { flowListToBlocks } from '../services/blocksTransformer';
+import { getConnections, getFlowById, getFlows } from '../services/citizenApi';
+import { flowListToBlocks, mapFlowDescription } from '../services/blocksTransformer';
 const fetch = require('isomorphic-fetch');
 
 const router = express.Router();
@@ -41,6 +41,11 @@ router.get("/flow/:flowId", async (req, res) => {
         2. If email is "capo@gmail.com" then:
             2a Create Contact in Salesforce
     */
+
+    const connections = await getConnections();
+
+    const blocks = mapFlowDescription(result, connections);
+    console.log(JSON.stringify(blocks, null, 3));
 
     res.send(result);
   } catch (e) {

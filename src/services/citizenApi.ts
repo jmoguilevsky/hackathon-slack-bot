@@ -1,3 +1,4 @@
+import { ConnectionListResponse } from '../common/types/Connection';
 import { FlowProject, FlowSummaryList } from '../common/types/FlowProject';
 const fetch = require('isomorphic-fetch');
 require("dotenv").config();
@@ -9,6 +10,29 @@ const tokenPromise = login(process.env.USERNAME, process.env.PASSWORD);
 const orgIdPromse: Promise<string> = tokenPromise.then(t => getOrgId(t.access_token));
 
 interface GetFlowsOptions { pageSize: number };
+
+class InMemoryCache {
+    private storage: Map<string, any> = new Map();
+    public get<T>(key: string) {
+        return this.storage.get(key);
+    }
+    public set<T>(key: string, value: T) {
+        this.storage.set(key, value);
+    }
+
+    public async retrieve<T>(key: string, generator: () => Promise<T>) {
+        const value = this.get(key);
+        if (value) {
+            return value;
+        }
+
+        const result = await generator();
+        this.set(key, result);
+        return result;
+    }
+}
+const cache = new InMemoryCache();
+
 export async function getFlows(options?: GetFlowsOptions): Promise<FlowSummaryList> {
     const pageSize = options?.pageSize || 10;
     const orgId = await orgIdPromse;
@@ -20,7 +44,13 @@ export async function getFlows(options?: GetFlowsOptions): Promise<FlowSummaryLi
 export async function getFlowById(flowId: string): Promise<FlowProject> {
     const orgId = await orgIdPromse;
     const flowUrl = `https://citizen-platform-xapi-service.kqa.msap.io/api/v1/organizations/${orgId}/flows/${flowId}`;
-    return await makeApiCall<FlowProject>(flowUrl);
+    return await cache.retrieve(flowUrl, () => makeApiCall<FlowProject>(flowUrl));
+}
+
+export async function getConnections(): Promise<ConnectionListResponse> {
+    const orgId = await orgIdPromse;
+    const url = `https://citizen-platform-xapi-service.kqa.msap.io/api/v1/organizations/${orgId}/connections`;
+    return await cache.retrieve(url, () => makeApiCall<ConnectionListResponse>(url));
 }
 
 async function makeApiCall<TResponse = any>(url: string): Promise<TResponse> {

@@ -167,6 +167,7 @@ export async function getFlowBlocks(flow: FlowProject, connections: ConnectionLi
     }));
 
     await createFlowImage(flow);
+    console.log(`${process.env.SERVER_URI}/static/${flow.name?.replace(/ /g, '_')}.png`);
     const flowImage = {
         "type": "image",
         "title": {
@@ -174,7 +175,7 @@ export async function getFlowBlocks(flow: FlowProject, connections: ConnectionLi
             "text": flow.name,
             "emoji": true
         },
-        "image_url": `${process.env.SERVER_URI}/static/${flow.name?.replace(' ', '_')}.png`,
+        "image_url": `${process.env.SERVER_URI}/static/${flow.name?.replace(/ /g, '_')}.png`,
         "alt_text": "inspiration"
     };
     const divider = {
@@ -182,16 +183,3 @@ export async function getFlowBlocks(flow: FlowProject, connections: ConnectionLi
     }
     return [...flowDescriptionBlocks, ...stepsDescription, divider, flowImage];
 }
-
-// function getFlowSimplifiedSteps(steps: Array<Step>) {
-//     return steps.map((step) => {
-//         if (step.type === 'ACTION' || step.type === 'trigger') {
-//             return { logo: step.connector };
-//         }
-//         if (step.type === 'CONDITIONAL') {
-//             return { logo: 'condition', branches: (step as ConditionalStep).conditionsBranches.map(branch => ({ condition: getBranchConditions(branch), steps: getFlowSimplifiedSteps(branch.steps) })) }
-//         }
-//     })
-// }
-//console.log(JSON.stringify(mapFlowDescription(exampleFlow)));
-//console.log(JSON.stringify(getFlowSimplifiedSteps(exampleFlow.steps)))

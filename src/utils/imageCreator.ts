@@ -34,6 +34,6 @@ export async function createFlowImage(flow: FlowProject) {
   const page = await browser.newPage()
   const content = getFlowHTMLStructure(flow);
   await page.setContent(content)
-  await page.screenshot({path: `./public/${flow.name?.replace(' ', '_')}.png`})
+  await page.screenshot({path: `./public/${flow.name?.replace(/ /g, '_')}.png`})
   await browser.close()
 }

@@ -122,7 +122,7 @@ const commands: Record<ActionIds, Command> = {
   },
 };
 
-router.get("/", (req, res) => res.send("Hello world!\n"));
+router.get("/", (req, res) => res.status(200).set("Content-type", "text/plain").send("Hello world!\n"));
 
 router.post("/", async (req, res, next) => {
   const body = req.body;

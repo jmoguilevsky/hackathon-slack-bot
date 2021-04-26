@@ -212,8 +212,8 @@ router.post("/interactive-action", async (req, res, next) => {
       // TODO: Execute reminder
 
       const stringified = JSON.stringify(payload.view.state.values as string);
-      const date = stringified.match(/"type":"datepicker","selected_date":"([^"]*)"/)[1];
-      const time = stringified.match(/"type":"timepicker","selected_time":"([^"]*)"/)[1];
+      const date = stringified.match(/"type":"datepicker","selected_date":"([^"]*)"/)?.[1];
+      const time = stringified.match(/"type":"timepicker","selected_time":"([^"]*)"/)?.[1];
       const timestamp = Date.parse(`${date}T${time}:00.000-07:00`);
       await service.sendMessage(
         channelId,

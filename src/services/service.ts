@@ -25,7 +25,7 @@ export async function sendMessage(
     })
     .retry(0)
     .send({ text, channel, blocks, post_at })
-    .then((response) => {
+    .then((response: superagent.Response) => {
       console.log("Slack responded with", response.status, response.body, channel, text, inspect(blocks, false, 10));
       return response;
     });
@@ -47,7 +47,7 @@ export async function openModal(view: unknown, triggerId: string): Promise<super
     })
     .retry(0)
     .send({ trigger_id: triggerId, view })
-    .then((response: unknown) => {
+    .then((response: superagent.Response) => {
       console.log("Slack responded with:", response);
       return response;
     });

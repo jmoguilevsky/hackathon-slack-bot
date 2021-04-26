@@ -1,1 +1,1 @@
-slackbot: npm run start
+slackbot: yarn run start

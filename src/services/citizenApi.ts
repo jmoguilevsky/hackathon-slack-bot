@@ -119,7 +119,7 @@ export async function getFlowStatus(flowId: string): Promise<FlowStatusResponse>
 export async function getFlowById(flowId: string): Promise<Readonly<FlowProject>> {
   const orgId = await getOrgId();
   const flowUrl = `https://citizen-platform-xapi-service.kqa.msap.io/api/v1/organizations/${orgId}/flows/${flowId}?readOnly=true`;
-  return await cache.retrieve(flowUrl, () => makeApiCall<FlowProject>(flowUrl));
+  return await makeApiCall<FlowProject>(flowUrl);
 }
 
 export async function getRunHistory(flowId: string, pageNumber = 1, pageSize = 14): Promise<Array<RunHistoryRecord>> {

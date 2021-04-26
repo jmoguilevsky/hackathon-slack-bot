@@ -140,7 +140,7 @@ router.post("/", async (req, res, next) => {
     return;
   }
 
-  const text: string = body.event.text.trim().toLowerCase();
+  let text: string = body.event.text;
   const type: string = body.event.type;
   const channel: string = body.event.channel;
 
@@ -148,6 +148,8 @@ router.post("/", async (req, res, next) => {
     console.log("Skipping as it has no text");
     return;
   }
+
+  text = text.trim().toLowerCase();
 
   const botId = process.env.BOT_ID;
   if (!botId) {
@@ -197,34 +199,32 @@ router.post("/interactive-action", async (req, res, next) => {
     setTimeout(() => res.status(200).end(), 1500);
 
     const payload = JSON.parse(req.body.payload);
-    console.log(JSON.stringify(req.body));
-    const channel = payload.channel?.id;
+    console.log(JSON.stringify(payload));
 
     if (payload.type === "view_submission") {
       const values = payload.view?.state?.values;
-      const metadataValues = payload.view?.private_metadata.split('|');
+      const metadataValues = payload.view?.private_metadata.split("|");
       const flowId = metadataValues[0];
       const channelId = metadataValues[1];
       console.log(values);
-      console.log(metadataValues)
-      console.log(flowId, channelId)
+      console.log(metadataValues);
+      console.log(flowId, channelId);
       // TODO: Execute reminder
 
       const stringified = JSON.stringify(payload.view.state.values as string);
-      const date = stringified.match(/"type":"datepicker","selected_date":"([^"]*)"/)[1].split("-");
-      const time = stringified.match(/"type":"timepicker","selected_time":"([^"]*)"/)[1].split(":");
-      const timestamp = Date.parse(`${date} ${time}:00 GMT+0700`);
+      const date = stringified.match(/"type":"datepicker","selected_date":"([^"]*)"/)[1];
+      const time = stringified.match(/"type":"timepicker","selected_time":"([^"]*)"/)[1];
+      const timestamp = Date.parse(`${date}T${time}:00.000-07:00`);
       await service.sendMessage(
-        channel,
+        channelId,
         `<@${process.env.BOT_ID}> activate flow \`${flowId}\``,
         undefined,
         timestamp / 1000,
       );
-      return {
-        text: `Flow \`flowId\` will be activated at ${date} ${time} (PDT)`,
-      };
+      await service.sendMessage(channelId, `Flow \`${flowId}\` will be activated at ${date} ${time} (PDT)`);
     }
 
+    const channel = payload.channel?.id;
     const triggerId = payload.trigger_id;
 
     const action: { action_id: ActionIds; value: string } = payload.actions?.[0] || {
